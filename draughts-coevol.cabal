@@ -1,13 +1,13 @@
 name:                draughts-coevol
 version:             0.1.0.0
 synopsis:            Short description of your package
-homepage:            https://github.com/iichr/draughts-coevol#readme
+homepage:            https://github.com/iichr/draughts-coevolution#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Chris Iliev
 maintainer:          cii549@cs.bham.ac.uk
 copyright:           2017 Chris Iliev
-category:            Web
+category:            Game
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 -- To avoid duplicated efforts in documentation and dealing with the
 -- complications of embedding Haddock markup inside cabal files, it is
 -- common to point users to the README.md file.
-description:         Please see the README on Github at <https://github.com/iichr/draughts-coevol#readme>
+description:         Please see the README on Github at <https://github.com/iichr/draughts-coevolution#readme>
 
 library
   hs-source-dirs:      src
@@ -42,4 +42,4 @@ test-suite draughts-coevol-test
 
 source-repository head
   type:     git
-  location: https://github.com/iichr/draughts-coevol
+  location: https://github.com/iichr/draughts-coevolution
