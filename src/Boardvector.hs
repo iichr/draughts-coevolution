@@ -1,7 +1,9 @@
 module Boardvector where
 
 import Data.List (intersperse, concat)
+import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
+import Control.Monad
 import Board
 
 data VectorBoard = VectorBoard (V.Vector (V.Vector Square))
@@ -46,8 +48,17 @@ initialBoard = VectorBoard $ V.concat[V.replicate 1 (initialOddRow blackrow),
                             emptyrow = V.replicate 8 (Empty)
 
 -- Get a square from the board given one and a position
-getSquare :: VectorBoard -> Position -> Square
-getSquare (VectorBoard b) (r,c) = b V.! r V.! c
+-- 21 Jan changed to safe-indexing !? instead of ! 
+-- strive for total function
+getSquare :: VectorBoard -> Position -> Maybe Square
+-- hacky way
+-- getSquare (VectorBoard b) (r,c) = fromMaybe Empty ((fromMaybe (V.replicate 8 (Empty)) (b V.!? r)) V.!? c)
+-- using Maybe as a Monad (analogous to <<=)
+-- if one fails we want the whole evaluation to fail
+getSquare (VectorBoard b) (r,c) = do
+    row <- b V.!? r
+    sq <- row V.!? c
+    return sq
 
 -- Test getSquare
 -- get all squares in a flat list :: [Square]
@@ -63,5 +74,38 @@ setSquare (VectorBoard b) newfig (x,y) = VectorBoard $ b V.// [(x, (b V.! x V.//
 
 -- putStr $ unlines [unwords [show (arr V.! x V.! y) | x <- [0..7], y <- [0..7]]]
 
+-- make an element a king when it reaches the appropriate row
+kingify :: Square -> Square
+kingify (Empty) = Empty
+kingify (Tile player _) = Tile player King
+
+-- does the given tile belong to the given player
+whoseTile :: Square -> Player -> Bool
+whoseTile Empty _ = False
+whoseTile (Tile player1 _) player2 = player1 == player2
+
+-- check whether a given position is within the range of the board and EMPTY as well
+canMoveInto :: VectorBoard -> Position -> Bool
+canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0 && getSquare (VectorBoard b) dest == Just Empty
+
+-- test canMoveInto
+-- [canMoveInto initialBoard x | x <- [(-1,-1), (1, -1), (7,7), (7,8), (8,7), (0,0), (5,2), (4,7), (2,5), (2,3), (2,4)]]
+
+-- A simple move consists of either:
+-- moving an uncrowned piece one square FORWARD DIAGONALLY to an adjacent unoccupied dark square, or
+-- moving a king piece kings one square IN ANY DIAGONAL DIRECTION
+simpleMove :: VectorBoard -> Position -> [Position]
+simpleMove (VectorBoard b) orig@(row, col)
+        |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) whiteMoves
+        |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) blackMoves
+        |Just (Tile _ King) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) kingMoves
+        |otherwise = []
+    where
+        whiteMoves = [(row-1, col-1), (row-1, col+1)]
+        blackMoves = [(row+1, col-1), (row+1, col+1)]
+        kingMoves = whiteMoves ++ blackMoves
 
         

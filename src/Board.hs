@@ -84,6 +84,7 @@ updateBoard_onMove (Board posmap) newpos tile = setBoardPositionMap (Board posma
 
 --better representation - binary? look into chess
 -- more hypotheses perhaps, running simulation anyway
+-- selection -1/n
 
 
 
