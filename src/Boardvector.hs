@@ -108,4 +108,42 @@ simpleMove (VectorBoard b) orig@(row, col)
         blackMoves = [(row+1, col-1), (row+1, col+1)]
         kingMoves = whiteMoves ++ blackMoves
 
+-- A jump move:
+-- can be made over an opponent's piece only
+-- check whether the destination to jump to is valid and Empty
+-- check whether the position to be jumped to inbetween is neither Empty nor belonging to the same player
+jump :: VectorBoard -> Position -> [Position]
+jump (VectorBoard b) orig@(row, col)
+        |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) [dest | (dest,inbetween) <- whiteZippedPath, 
+                                                    let z = getSquare (VectorBoard b) inbetween, 
+                                                    not $ z `elem` [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+
+        |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- blackZippedPath, 
+                                                    let z = getSquare (VectorBoard b) y, 
+                                                    not $ z `elem` [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
+                                                                                                        
+        |Just (Tile White King) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
+                                                    let z = getSquare (VectorBoard b) y, 
+                                                    not $ z `elem` [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+
+        |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
+            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
+                                                    let z = getSquare (VectorBoard b) y, 
+                                                    not $ z `elem` [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
         
+    where
+        -- mind the order for zip to work properly
+        whiteInbetween = [(row-1, col-1), (row-1, col+1)]
+        blackInbetween = [(row+1, col-1), (row+1, col+1)]
+
+        whiteJumps = [(row-2, col-2), (row-2, col+2)]
+        blackJumps = [(row+2, col-2), (row+2, col+2)]
+        kingJumps = whiteJumps ++ blackJumps
+
+        -- pair jump with the position to be jumped inbetween for checking
+        whiteZippedPath = zip whiteJumps whiteInbetween
+        blackZippedPath = zip blackJumps blackInbetween
+        kingZippedPath = whiteZippedPath ++ blackZippedPath
