@@ -1,7 +1,7 @@
 module Main where
 
 import Lib
-import Board
+import Boardvector
 
 main :: IO ()
 main = someFunc
