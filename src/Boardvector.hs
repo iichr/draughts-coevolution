@@ -31,16 +31,16 @@ instance Show Square where
     show (Tile White King) = "W"
 
 instance Show VectorBoard where
-    show board = unlines ([colIndex] ++ (boardStr)) where
+    show board = unlines ([colIndex] ++ boardStr) where
         -- display the column index at the top
-        colIndex = (concat $ intersperse " | " $ (id " ") : [ [x] | x <- ['0'..'7'] ]) ++ " |"
+        colIndex = concat (intersperse " | " $ (id " ") : [ [x] | x <- ['0'..'7'] ]) ++ " |"
         -- display each row along with its index
-        boardStr = zipWith showRow ([0..7]) $ boardToList board
+        boardStr = zipWith showRow [0..7] $ boardToList board
         -- HELPERS
         --  convert board to list of squares
         boardToList (VectorBoard b) = V.toList $ V.map V.toList b
         -- display a single board row
-        showRow i sqs = (concat $ intersperse " | " $ (show i) : (map show sqs) ) ++ " |"
+        showRow i sqs = concat (intersperse " | " $ (show i) : (map show sqs) ) ++ " |"
 
     
 initialBoard :: VectorBoard
@@ -55,7 +55,7 @@ initialBoard = VectorBoard $ V.concat[V.replicate 1 (initialOddRow blackrow),
                     where
                         blackrow = V.replicate 8 (Tile Black Man)
                         whiterow = V.replicate 8 (Tile White Man)
-                        emptyrow = V.replicate 8 (Empty)
+                        emptyrow = V.replicate 8 Empty
                         -- generate rows 1,3 and 7
                         initialOddRow vect = vect V.// [(i, Empty) | i <- [0..7], even i]
                         -- generate rows 2,6 and 8
@@ -68,8 +68,7 @@ initialBoard = VectorBoard $ V.concat[V.replicate 1 (initialOddRow blackrow),
 getSquare :: VectorBoard -> Position -> Maybe Square
 getSquare (VectorBoard b) (r,c) = do
     row <- b V.!? r
-    sq <- row V.!? c
-    return sq
+    row V.!? c
 
 -- Test getSquare
 -- get all squares in a flat list :: [Square]
@@ -81,7 +80,7 @@ getSquare (VectorBoard b) (r,c) = do
 
 -- replace x-th vector of the board with (the replacement of y-th element of the x-th vector with a newfigure)
 setSquare :: VectorBoard -> Square -> Position -> VectorBoard
-setSquare (VectorBoard b) newfig (x,y) = VectorBoard $ b V.// [(x, (b V.! x V.// [(y, newfig)]))]
+setSquare (VectorBoard b) newfig (x,y) = VectorBoard $ b V.// [(x, b V.! x V.// [(y, newfig)])]
 
 -- putStr $ unlines [unwords [show (arr V.! x V.! y) | x <- [0..7], y <- [0..7]]]
 
@@ -91,9 +90,10 @@ kingify (Empty) = Empty
 kingify (Tile player _) = Tile player King
 
 -- Does a given tile belong to a given player
-whoseTile :: Square -> Player -> Bool
-whoseTile Empty _ = False
-whoseTile (Tile player1 _) player2 = player1 == player2
+whoseTile :: Maybe Square -> Player -> Bool
+whoseTile (Just Empty) _ = False
+whoseTile (Just(Tile player1 _)) player2 = player1 == player2
+whoseTile Nothing _ = False
 
 -- check whether a given position is within the range of the board and EMPTY as well
 canMoveInto :: VectorBoard -> Position -> Bool
@@ -128,22 +128,22 @@ jump (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
             filter (canMoveInto (VectorBoard b)) [dest | (dest,inbetween) <- whiteZippedPath, 
                                                     let z = getSquare (VectorBoard b) inbetween, 
-                                                    not $ z `elem` [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+                                                    notElem z [Just (Tile White Man), Just (Tile White King), Just Empty] ]
 
         |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
             filter (canMoveInto (VectorBoard b)) [x | (x,y) <- blackZippedPath, 
                                                     let z = getSquare (VectorBoard b) y, 
-                                                    not $ z `elem` [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
+                                                    notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
                                                                                                         
         |Just (Tile White King) <- getSquare (VectorBoard b) orig =
             filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
                                                     let z = getSquare (VectorBoard b) y, 
-                                                    not $ z `elem` [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+                                                    notElem z [Just (Tile White Man), Just (Tile White King), Just Empty] ]
 
         |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
             filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
                                                     let z = getSquare (VectorBoard b) y, 
-                                                    not $ z `elem` [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
+                                                    notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
                                                     
         |otherwise = []
     where
@@ -159,3 +159,15 @@ jump (VectorBoard b) orig@(row, col)
         whiteZippedPath = zip whiteJumps whiteInbetween
         blackZippedPath = zip blackJumps blackInbetween
         kingZippedPath = whiteZippedPath ++ blackZippedPath
+
+getPlayerMoves :: VectorBoard -> Player -> [(Position, Position)]
+getPlayerMoves (VectorBoard b) player = do
+    row <- [0..7]
+    col <- [0..7]
+    let src = (row, col)
+    let square = getSquare (VectorBoard b) src
+    let simpleMoves = simpleMove (VectorBoard b) src
+    let jumps = jump(VectorBoard b) src
+    if whoseTile square player
+        then map ((,) src) $ simpleMoves ++ jumps
+        else []
