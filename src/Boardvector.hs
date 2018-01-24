@@ -1,7 +1,7 @@
 module Boardvector where
 
 import Data.List (intersperse, concat)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 import qualified Data.Vector as V
 import Control.Monad
 
@@ -22,6 +22,7 @@ data VectorBoard = VectorBoard (V.Vector (V.Vector Square))
     deriving Eq
 
 data GameState = GameState VectorBoard Player
+    deriving Eq
 
 instance Show Square where
     show Empty = "."
@@ -42,6 +43,9 @@ instance Show VectorBoard where
         -- display a single board row
         showRow i sqs = concat (intersperse " | " $ (show i) : (map show sqs) ) ++ " |"
 
+instance Show GameState where
+    show (GameState board player) = 
+        show board ++ show player ++ "\n"
     
 initialBoard :: VectorBoard
 -- each elem in the concat is of type V.Vector (V.Vector Square)
@@ -86,7 +90,7 @@ setSquare (VectorBoard b) newfig (x,y) = VectorBoard $ b V.// [(x, b V.! x V.// 
 
 -- make an element a king when it reaches the appropriate row
 kingify :: Square -> Square
-kingify (Empty) = Empty
+kingify Empty = Empty
 kingify (Tile player _) = Tile player King
 
 -- Does a given tile belong to a given player
@@ -94,6 +98,11 @@ whoseTile :: Maybe Square -> Player -> Bool
 whoseTile (Just Empty) _ = False
 whoseTile (Just(Tile player1 _)) player2 = player1 == player2
 whoseTile Nothing _ = False
+
+-- Get the opposite player of the one given
+oppositeOf :: Player -> Player
+oppositeOf White = Black
+oppositeOf Black = White
 
 -- check whether a given position is within the range of the board and EMPTY as well
 canMoveInto :: VectorBoard -> Position -> Bool
@@ -160,8 +169,11 @@ jump (VectorBoard b) orig@(row, col)
         blackZippedPath = zip blackJumps blackInbetween
         kingZippedPath = whiteZippedPath ++ blackZippedPath
 
-getPlayerMoves :: VectorBoard -> Player -> [(Position, Position)]
-getPlayerMoves (VectorBoard b) player = do
+-- Get all moves a player can perform given a GameState, with results
+-- listed in the form of [(source position), (destination position)]
+-- alternative implementation VectorBoard -> Player -> etc
+getPlayerMoves :: GameState -> [(Position, Position)]
+getPlayerMoves (GameState (VectorBoard b) player) = do
     row <- [0..7]
     col <- [0..7]
     let src = (row, col)
@@ -171,3 +183,34 @@ getPlayerMoves (VectorBoard b) player = do
     if whoseTile square player
         then map ((,) src) $ simpleMoves ++ jumps
         else []
+
+-- test getPlayerMoves
+-- getPlayerMoves (GameState initialBoard White)
+
+-- Execute a move to a location given a source position and a gameState
+-- returning a new gameState accepting the opposing player's turn
+--
+-- TODO jump moves need to remove the element being jumped over
+-- TODO make element king when the last row is reached
+-- TODO if availableMoves is [] then the opposing player has won
+performMove :: GameState -> Position -> Position -> GameState
+performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
+    | (orig, dest) `elem` availableMoves = GameState newBoard player2
+    | otherwise = oldGameState
+    where
+        availableMoves = getPlayerMoves oldGameState
+        player2 = oppositeOf player1
+        fig = fromJust $ getSquare (VectorBoard b) orig
+        boardFigRemoved = setSquare (VectorBoard b) Empty orig
+        newBoard = setSquare boardFigRemoved fig dest
+
+-- test performMove
+-- let bb = setSquare initialBoard (Tile Black Man) (5,2)
+-- let gs1 = performMove (GameState bb White) (6,1) (4,3)
+-- let invalidgs2 = performMove gs1 (5,0) (4,1)
+-- invalidgs2 == gs1
+-- let validgs2 = performMove gs1 (2,3) (3,4)
+-- validgs2 /= gs1
+-- let validgs3 = performMove validgs2 (5,6) (4,5)
+-- validgs3 /= validgs2
+-- let validgs4 = performMove validgs3 (3,4) (5,6)
