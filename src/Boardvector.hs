@@ -74,24 +74,22 @@ getSquare (VectorBoard b) (r,c) = do
     row <- b V.!? r
     row V.!? c
 
--- Test getSquare
--- get all squares in a flat list :: [Square]
--- [getSquare initialBoard (x,y) | x <- [0..7], y <- [0..7]] 
--- LHS: V.fromList [getSquare initialBoard (x,y) | x <- [0..7], y <- [0..7]] 
--- :: V.Vector Square
--- RHS: V.concat[initialBoard V.! r | r <- [0..7]]
--- test LHS and RHS for equality
-
 -- replace x-th vector of the board with (the replacement of y-th element of the x-th vector with a newfigure)
 setSquare :: VectorBoard -> Square -> Position -> VectorBoard
 setSquare (VectorBoard b) newfig (x,y) = VectorBoard $ b V.// [(x, b V.! x V.// [(y, newfig)])]
-
--- putStr $ unlines [unwords [show (arr V.! x V.! y) | x <- [0..7], y <- [0..7]]]
 
 -- make an element a king when it reaches the appropriate row
 kingify :: Square -> Square
 kingify Empty = Empty
 kingify (Tile player _) = Tile player King
+
+-- should an element be kinged depending on the player and its current position, 
+-- if so return the square which should be kinged
+-- white promoted at 0
+-- black at 7
+shouldPromote :: Player -> Position -> Bool
+shouldPromote White (row ,col) = row == 0
+shouldPromote Black (row, col) = row == 7
 
 -- Does a given tile belong to a given player
 whoseTile :: Maybe Square -> Player -> Bool
@@ -107,9 +105,6 @@ oppositeOf Black = White
 -- check whether a given position is within the range of the board and EMPTY as well
 canMoveInto :: VectorBoard -> Position -> Bool
 canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0 && getSquare (VectorBoard b) dest == Just Empty
-
--- test canMoveInto
--- [canMoveInto initialBoard x | x <- [(-1,-1), (1, -1), (7,7), (7,8), (8,7), (0,0), (5,2), (4,7), (2,5), (2,3), (2,4)]]
 
 -- A simple move consists of either:
 -- moving an uncrowned piece one square FORWARD DIAGONALLY to an adjacent unoccupied dark square, or
@@ -169,9 +164,9 @@ jump (VectorBoard b) orig@(row, col)
         blackZippedPath = zip blackJumps blackInbetween
         kingZippedPath = whiteZippedPath ++ blackZippedPath
 
--- Get all moves a player can perform given a GameState, with results
--- listed in the form of [(source position), (destination position)]
--- alternative implementation VectorBoard -> Player -> etc
+-- * Get all moves a player can perform given a GameState, with results
+-- * listed in the form of [(source position), (destination position)]
+-- * alternative implementation VectorBoard -> Player -> etc
 getPlayerMoves :: GameState -> [(Position, Position)]
 getPlayerMoves (GameState (VectorBoard b) player) = do
     row <- [0..7]
@@ -184,14 +179,10 @@ getPlayerMoves (GameState (VectorBoard b) player) = do
         then map ((,) src) $ simpleMoves ++ jumps
         else []
 
--- test getPlayerMoves
--- getPlayerMoves (GameState initialBoard White)
-
 -- Execute a move to a location given a source position and a gameState
 -- returning a new gameState accepting the opposing player's turn
 --
 -- TODO jump moves need to remove the element being jumped over
--- TODO make element king when the last row is reached
 -- TODO if availableMoves is [] then the opposing player has won
 performMove :: GameState -> Position -> Position -> GameState
 performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
@@ -200,17 +191,15 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
     where
         availableMoves = getPlayerMoves oldGameState
         player2 = oppositeOf player1
+        -- get the figure at the original position
         fig = fromJust $ getSquare (VectorBoard b) orig
-        boardFigRemoved = setSquare (VectorBoard b) Empty orig
-        newBoard = setSquare boardFigRemoved fig dest
+        -- remove that figure and return a board without it
+        boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
+        -- check destination position for promotion, true if yes
+        promotion = shouldPromote player1 dest
+        newBoard =
+            if promotion
+                -- add promoted figure to the newBoard destination position
+                then setSquare boardFigRemovedPlayer (kingify fig) dest
+                else setSquare boardFigRemovedPlayer fig dest
 
--- test performMove
--- let bb = setSquare initialBoard (Tile Black Man) (5,2)
--- let gs1 = performMove (GameState bb White) (6,1) (4,3)
--- let invalidgs2 = performMove gs1 (5,0) (4,1)
--- invalidgs2 == gs1
--- let validgs2 = performMove gs1 (2,3) (3,4)
--- validgs2 /= gs1
--- let validgs3 = performMove validgs2 (5,6) (4,5)
--- validgs3 /= validgs2
--- let validgs4 = performMove validgs3 (3,4) (5,6)
