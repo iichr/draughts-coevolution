@@ -5,6 +5,11 @@ import Boardvector
 import qualified Data.Vector as V
 import Data.Maybe (fromMaybe, fromJust)
 
+
+getBoardFromState :: GameState -> VectorBoard
+getBoardFromState gamestate@(GameState (VectorBoard b) _) = VectorBoard b
+-- also useful (\(VectorBoard x)->x) board
+
 spec :: Spec
 spec = do
     describe "getSquare" $ do
@@ -60,6 +65,31 @@ spec = do
         it "is true when the position is within the board and empty" $ do
             let allunoccupied = [(x,y)| x<-[0,2,6],y <- [0,2,4,6]] ++ [(z,k) | z <- [1,5,7], k<-[1,3,5,7]] ++ [(3,u)|u<-[0..7]] ++ [(4,v)|v<-[0..7]]
             [canMoveInto initialBoard pss | pss <- allunoccupied] `shouldBe` replicate 40 True
+
+    describe "simpleMove" $ do
+        context "when given a board and a position that is empty or non-existent" $ do
+            it "returns an empty list of possible simple moves" $ do
+                let validpos = [(0,0), (1,1), (2,4), (5,3), (5,7), (4,2), (3,6), (7,3)]
+                let invalid = [(u,v) | u <- [-1,-2,-3,-15,28734,8,9,13], v <- [1,2,4,8,0,-121,-31,424]]
+                concat [simpleMove initialBoard x | x <- validpos] `shouldSatisfy` null
+                concat [simpleMove initialBoard y | y <- invalid] `shouldSatisfy` null
+        context "when given a board and a valid position with no obstacles in the direction of movement" $ do
+            it "returns a list of possible simple moves" $ do
+                simpleMove initialBoard (2,1) `shouldBe` [(3,0),(3,2)]
+                simpleMove initialBoard (2,5) `shouldBe` [(3,4), (3,6)]
+                simpleMove initialBoard (2,7) `shouldBe` [(3,6)]
+                simpleMove initialBoard (5,0) `shouldBe` [(4,1)]
+                simpleMove initialBoard (5,6) `shouldBe` [(4,5),(4,7)]
+                -- TODO test with unobstructed kings from both players
+        context "when given a board and a valid position from which there are no possible moves" $ do
+            it "returns an empty list" $ do
+                let allOccupiedBlocked = [(y,x)| x<-[0,2,4,6],y <- [1,7]] ++ [(z,k) | z <- [0,6], k<-[1,3,5,7]]
+                concat [simpleMove initialBoard z | z <- allOccupiedBlocked] `shouldSatisfy` null
+        -- context "when given a board and a valid position from which there are some possible moves" $ do
+        --     it "returns a list of the possible moves excluding the obstacles" $ do
+                -- TODO test with kings from both players
+
+
 
 
 -- Test getPlayerMoves
