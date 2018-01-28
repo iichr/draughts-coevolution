@@ -1,7 +1,7 @@
 module Boardvector where
 
 import Data.List (intersperse, concat)
-import Data.Maybe (fromMaybe, fromJust)
+import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
 
@@ -106,6 +106,11 @@ oppositeOf Black = White
 canMoveInto :: VectorBoard -> Position -> Bool
 canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0 && getSquare (VectorBoard b) dest == Just Empty
 
+-- same as above, specifically for a jump move
+-- deals with arguments passed in the form of (destination, position of piece inbetween)
+canJumpInto :: VectorBoard -> (Position, Position) -> Bool
+canJumpInto (VectorBoard b) arg@((row,col), inbetween) = canMoveInto (VectorBoard b) (row,col)
+
 -- A simple move consists of either:
 -- moving an uncrowned piece one square FORWARD DIAGONALLY to an adjacent unoccupied dark square, or
 -- moving a king piece kings one square IN ANY DIAGONAL DIRECTION
@@ -127,31 +132,35 @@ simpleMove (VectorBoard b) orig@(row, col)
 -- can be made over an opponent's piece only
 -- check whether the destination to jump to is valid and Empty
 -- check whether the position to be jumped to inbetween is neither Empty nor belonging to the same player
-jump :: VectorBoard -> Position -> [Position]
+jump :: VectorBoard -> Position -> [(Position,Position)]
 jump (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) [dest | (dest,inbetween) <- whiteZippedPath, 
-                                                    let z = getSquare (VectorBoard b) inbetween, 
-                                                    notElem z [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+            [(dest,inbetween) | (dest,inbetween) <- whiteZippedPath, 
+                                let z = getSquare (VectorBoard b) inbetween, 
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty]
+                                ]
 
         |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- blackZippedPath, 
-                                                    let z = getSquare (VectorBoard b) y, 
-                                                    notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
+            [(dest,inbetween) | (dest,inbetween) <- blackZippedPath, 
+                                let z = getSquare (VectorBoard b) inbetween, 
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty]
+                                ]
                                                                                                         
         |Just (Tile White King) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
-                                                    let z = getSquare (VectorBoard b) y, 
-                                                    notElem z [Just (Tile White Man), Just (Tile White King), Just Empty] ]
+            [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
+                                let z = getSquare (VectorBoard b) inbetween, 
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty]
+                                ]
 
         |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) [x | (x,y) <- kingZippedPath, 
-                                                    let z = getSquare (VectorBoard b) y, 
-                                                    notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty] ]
-                                                    
+            [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
+                                let z = getSquare (VectorBoard b) inbetween, 
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty]
+                                ]
+                                               
         |otherwise = []
     where
-        -- mind the order for zip to work properly
+        -- mind the order inside for zip to work properly!
         whiteInbetween = [(row-1, col-1), (row-1, col+1)]
         blackInbetween = [(row+1, col-1), (row+1, col+1)]
 
@@ -159,37 +168,71 @@ jump (VectorBoard b) orig@(row, col)
         blackJumps = [(row+2, col-2), (row+2, col+2)]
         kingJumps = whiteJumps ++ blackJumps
 
-        -- pair jump with the position to be jumped inbetween for checking
+        -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
         whiteZippedPath = zip whiteJumps whiteInbetween
         blackZippedPath = zip blackJumps blackInbetween
         kingZippedPath = whiteZippedPath ++ blackZippedPath
 
--- * Get all moves a player can perform given a GameState, with results
--- * listed in the form of [(source position), (destination position)]
--- * alternative implementation VectorBoard -> Player -> etc
-getPlayerMoves :: GameState -> [(Position, Position)]
-getPlayerMoves (GameState (VectorBoard b) player) = do
+-- * Get all simple moves a player can perform given a GameState, with results
+-- * listed in the form of [(ORIGIN position), (DESTINATION position)]
+getSimpleMoves :: GameState -> [(Position, Position)]
+getSimpleMoves (GameState (VectorBoard b) player) = do
     row <- [0..7]
     col <- [0..7]
     let src = (row, col)
     let square = getSquare (VectorBoard b) src
     let simpleMoves = simpleMove (VectorBoard b) src
-    let jumps = jump(VectorBoard b) src
+    -- let jumps = jump (VectorBoard b) src
     if whoseTile square player
-        then map ((,) src) $ simpleMoves ++ jumps
+        then map ((,) src) $ simpleMoves
+        -- ++ jumps
         else []
 
+-- ! COMPLEXITY
+-- * Get all jumps a player can perform given a GameState, with results
+-- * listed in the form of [(ORIGIN position), (DESTINATION position, position of square INBETWEEN to be jumped)]
+getJumps :: GameState -> [((Position), ((Position), (Position)))]
+getJumps (GameState (VectorBoard b) player) = do
+    row <- [0..7]
+    col <- [0..7]
+    let src = (row, col)
+    let square = getSquare (VectorBoard b) src
+    let jumps = jump (VectorBoard b) src
+    if whoseTile square player
+        then map ((,) src) $ jumps
+        else []
+
+-- return the square inbetween
+getInbetweenPosition :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Maybe Position
+getInbetweenPosition (orig, dest) [] = Nothing
+getInbetweenPosition (orig, dest) ((o,(d,i)):ps)
+    | orig == o && dest == d = Just i
+    | otherwise = getInbetweenPosition (orig, dest) ps
+
+-- simulate 'elem'
+elemTriplet :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Bool
+elemTriplet (x,y) [] = False
+elemTriplet (x,y) ((k,(l,m)):ps)
+    | x == k && y == l = True
+    | otherwise = elemTriplet (x,y) ps
+
+
+-- ! COMPLEXITY
 -- Execute a move to a location given a source position and a gameState
 -- returning a new gameState accepting the opposing player's turn
---
--- TODO jump moves need to remove the element being jumped over
 -- TODO if availableMoves is [] then the opposing player has won
 performMove :: GameState -> Position -> Position -> GameState
 performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
-    | (orig, dest) `elem` availableMoves = GameState newBoard player2
+    | isJust inbetween = GameState newBoardJumped player2
+    | (orig, dest) `elem` availableSimpleMoves = GameState newBoardSimple player2
     | otherwise = oldGameState
     where
-        availableMoves = getPlayerMoves oldGameState
+        availableJumps = getJumps oldGameState
+        -- get the coords of the position inbetween
+        inbetween = getInbetweenPosition (orig, dest) availableJumps
+
+        availableSimpleMoves = getSimpleMoves oldGameState
+        
         player2 = oppositeOf player1
         -- get the figure at the original position
         fig = fromJust $ getSquare (VectorBoard b) orig
@@ -197,9 +240,23 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
         -- check destination position for promotion, true if yes
         promotion = shouldPromote player1 dest
-        newBoard =
+
+        -- remove what is inbetween if the move is a jump
+        -- get the figure inbetween from the board with the player's original piece already removed
+        figinbetween = fromJust $ getSquare boardFigRemovedPlayer (fromJust inbetween)
+        -- remove that figure
+        boardInbetweenRemoved = setSquare boardFigRemovedPlayer Empty (fromJust inbetween)
+
+        newBoardSimple =
             if promotion
                 -- add promoted figure to the newBoard destination position
                 then setSquare boardFigRemovedPlayer (kingify fig) dest
                 else setSquare boardFigRemovedPlayer fig dest
+        
+        newBoardJumped =
+            if promotion
+                -- add promoted to the destination position
+                then setSquare boardInbetweenRemoved (kingify fig) dest
+                else setSquare boardInbetweenRemoved fig dest
+
 
