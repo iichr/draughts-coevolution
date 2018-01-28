@@ -188,7 +188,6 @@ getSimpleMoves (GameState (VectorBoard b) player) = do
         -- ++ jumps
         else []
 
--- ! COMPLEXITY
 -- * Get all jumps a player can perform given a GameState, with results
 -- * listed in the form of [(ORIGIN position), (DESTINATION position, position of square INBETWEEN to be jumped)]
 getJumps :: GameState -> [((Position), ((Position), (Position)))]
@@ -202,25 +201,25 @@ getJumps (GameState (VectorBoard b) player) = do
         then map ((,) src) $ jumps
         else []
 
--- return the square inbetween
+-- Given an origin and destination position tuple and a list of triplets of jump positions
+-- in the form of (origin, (destination, inbetween)) find the tuple in the list and 
+-- extract the position of the square inbetween the origin and destination if it exists
 getInbetweenPosition :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Maybe Position
 getInbetweenPosition (orig, dest) [] = Nothing
 getInbetweenPosition (orig, dest) ((o,(d,i)):ps)
     | orig == o && dest == d = Just i
     | otherwise = getInbetweenPosition (orig, dest) ps
 
--- simulate 'elem'
+-- Check if a both elements of tuple of origin and destination positions are members of a list of triplets
 elemTriplet :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Bool
 elemTriplet (x,y) [] = False
 elemTriplet (x,y) ((k,(l,m)):ps)
     | x == k && y == l = True
     | otherwise = elemTriplet (x,y) ps
 
-
--- ! COMPLEXITY
+-- SAFE FOR HUMAN PLAYERS - MOVES ARE VALIDATED
 -- Execute a move to a location given a source position and a gameState
 -- returning a new gameState accepting the opposing player's turn
--- TODO if availableMoves is [] then the opposing player has won
 performMove :: GameState -> Position -> Position -> GameState
 performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
     | isJust inbetween = GameState newBoardJumped player2
@@ -228,11 +227,11 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
     | otherwise = oldGameState
     where
         availableJumps = getJumps oldGameState
-        -- get the coords of the position inbetween
-        inbetween = getInbetweenPosition (orig, dest) availableJumps
-
         availableSimpleMoves = getSimpleMoves oldGameState
+        -- * JUMPS: get the coords of the position inbetween
+        inbetween = getInbetweenPosition (orig, dest) availableJumps
         
+        -- COMMON BEGIN
         player2 = oppositeOf player1
         -- get the figure at the original position
         fig = fromJust $ getSquare (VectorBoard b) orig
@@ -240,19 +239,20 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
         -- check destination position for promotion, true if yes
         promotion = shouldPromote player1 dest
+        -- COMMON END
 
-        -- remove what is inbetween if the move is a jump
-        -- get the figure inbetween from the board with the player's original piece already removed
+        -- * JUMPS: get the figure inbetween from the board with the player's original piece already removed
         figinbetween = fromJust $ getSquare boardFigRemovedPlayer (fromJust inbetween)
-        -- remove that figure
+        -- * JUMPS: board bar the figure inbetween
         boardInbetweenRemoved = setSquare boardFigRemovedPlayer Empty (fromJust inbetween)
-
+        
         newBoardSimple =
             if promotion
                 -- add promoted figure to the newBoard destination position
                 then setSquare boardFigRemovedPlayer (kingify fig) dest
                 else setSquare boardFigRemovedPlayer fig dest
         
+        -- * JUMPS: new board to be returned
         newBoardJumped =
             if promotion
                 -- add promoted to the destination position
@@ -260,3 +260,82 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
                 else setSquare boardInbetweenRemoved fig dest
 
 
+-- Given a game state return a new game state with the next player's turn
+-- and the move of the previous player executed
+-- if there are any jumps available only consider those
+-- pass the list of availables to each auxiliary function requiring it for efficiency
+performMoveAI :: GameState -> GameState
+performMoveAI oldGameState@(GameState (VectorBoard b) player1)
+    | not . null $ availableJumps = performJump oldGameState (selectJump availableJumps)
+    | not . null $ availableSimpleMoves  = performSimpleMove oldGameState (selectSimpleMove availableSimpleMoves)
+    | otherwise = oldGameState
+    where
+        availableJumps = getJumps oldGameState
+        availableSimpleMoves = getSimpleMoves oldGameState
+
+
+-- !!!!!!!!!!!!!!!!!!
+-- ! JUMPS
+-- !!!!!!!!!!!!!!!!!!
+
+-- ! NOT SAFE FOR HUMANS - DOES NOT VERIFY MOVE VALIDITY
+-- Players will be predetermined and will only have access to the list of available moves to choose from
+-- hence a second check for move validity is redundant
+performJump :: GameState -> (Position, Position, Position) -> GameState
+performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest) = GameState newBoardJumped player2
+    where
+        player2 = oppositeOf player1
+        -- get the figure at the original position
+        fig = fromJust $ getSquare (VectorBoard b) orig
+        -- remove that figure and return a board without it
+        boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
+        -- check destination position for promotion, true if yes
+        promotion = shouldPromote player1 dest
+        
+        -- * REMOVE THE FIGURE AT THE INBETWEEN POSITION
+        -- get the figure inbetween from the board with the player's original piece already removed
+        figinbetween = fromJust $ getSquare boardFigRemovedPlayer inbtwn
+        -- return a board bar the figure inbetween
+        boardInbetweenRemoved = setSquare boardFigRemovedPlayer Empty inbtwn
+
+        -- return the new board
+        newBoardJumped =
+            if promotion
+                -- add promoted to the destination position
+                then setSquare boardInbetweenRemoved (kingify fig) dest
+                else setSquare boardInbetweenRemoved fig dest
+
+
+
+-- return an (origin, inbetween, destination) tuple
+-- needs to handle inbetween, extract and return it as a **non Maybe type** as part of the new tuple
+selectJump :: [((Position), ((Position), (Position)))] -> (Position, Position, Position)
+selectJump = undefined
+
+
+-- !!!!!!!!!!!!!!!!!!!
+-- ! SIMPLE MOVES
+-- !!!!!!!!!!!!!!!!!!!
+-- ! NOT SAFE FOR HUMANS - DOES NOT VERIFY MOVE VALIDITY
+-- Players will be predetermined and will only have access to the list of available moves to choose from
+-- hence a second check for move validity is redundant
+performSimpleMove :: GameState -> (Position, Position) -> GameState
+performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) = GameState newBoardSimple player2
+    where
+         player2 = oppositeOf player1
+         -- get the figure at the original position
+         fig = fromJust $ getSquare (VectorBoard b) orig
+         -- remove that figure and return a board without it
+         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
+         -- check destination position for promotion, true if yes
+         promotion = shouldPromote player1 dest
+         -- return the new board
+         newBoardSimple =
+            if promotion
+                -- add promoted figure to the newBoard destination position
+                then setSquare boardFigRemovedPlayer (kingify fig) dest
+                else setSquare boardFigRemovedPlayer fig dest
+
+-- return an origin, destination tuple
+selectSimpleMove :: [(Position, Position)] -> (Position, Position)
+selectSimpleMove = undefined
