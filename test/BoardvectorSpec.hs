@@ -89,6 +89,13 @@ spec = do
         --     it "returns a list of the possible moves excluding the obstacles" $ do
                 -- TODO test with kings from both players
 
+    describe "inbetweenPosition" $ do
+        it "given an origin and destination position and a list of triples returns the correct inbetween position" $ do
+            getInbetweenPosition ((1,3),(2,3)) [((2,3),((4,5),(6,7))), ((7,8),((2,3),(4,9))), ((1,3),((2,3),(0,0)))]
+            `shouldBe` Just (0,0)
+        it "returns Nothing if list of positions to search through is empty" $ do
+            getInbetweenPosition ((1,3),(2,3)) [((2,3),((4,5),(6,7))), ((7,8),((2,3),(4,9))), ((1,3),((3,3),(0,0)))]
+            `shouldBe` Nothing
 
 
 

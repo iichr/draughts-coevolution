@@ -88,8 +88,8 @@ kingify (Tile player _) = Tile player King
 -- white promoted at 0
 -- black at 7
 shouldPromote :: Player -> Position -> Bool
-shouldPromote White (row ,col) = row == 0
-shouldPromote Black (row, col) = row == 7
+shouldPromote White (row, _) = row == 0
+shouldPromote Black (row, _) = row == 7
 
 -- Does a given tile belong to a given player
 whoseTile :: Maybe Square -> Player -> Bool
@@ -109,7 +109,7 @@ canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0
 -- same as above, specifically for a jump move
 -- deals with arguments passed in the form of (destination, position of piece inbetween)
 canJumpInto :: VectorBoard -> (Position, Position) -> Bool
-canJumpInto (VectorBoard b) arg@((row,col), inbetween) = canMoveInto (VectorBoard b) (row,col)
+canJumpInto (VectorBoard b) ((row,col), inbetween) = canMoveInto (VectorBoard b) (row,col)
 
 -- A simple move consists of either:
 -- moving an uncrowned piece one square FORWARD DIAGONALLY to an adjacent unoccupied dark square, or
@@ -166,7 +166,6 @@ jump (VectorBoard b) orig@(row, col)
 
         whiteJumps = [(row-2, col-2), (row-2, col+2)]
         blackJumps = [(row+2, col-2), (row+2, col+2)]
-        kingJumps = whiteJumps ++ blackJumps
 
         -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
         whiteZippedPath = zip whiteJumps whiteInbetween
@@ -205,15 +204,15 @@ getJumps (GameState (VectorBoard b) player) = do
 -- in the form of (origin, (destination, inbetween)) find the tuple in the list and 
 -- extract the position of the square inbetween the origin and destination if it exists
 getInbetweenPosition :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Maybe Position
-getInbetweenPosition (orig, dest) [] = Nothing
-getInbetweenPosition (orig, dest) ((o,(d,i)):ps)
+getInbetweenPosition _ [] = Nothing
+getInbetweenPosition (orig, dest) ((o,(d,i)):ps) 
     | orig == o && dest == d = Just i
     | otherwise = getInbetweenPosition (orig, dest) ps
 
 -- Check if a both elements of tuple of origin and destination positions are members of a list of triplets
 elemTriplet :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Bool
-elemTriplet (x,y) [] = False
-elemTriplet (x,y) ((k,(l,m)):ps)
+elemTriplet _ [] = False
+elemTriplet (x,y) ((k,(l,_)):ps)
     | x == k && y == l = True
     | otherwise = elemTriplet (x,y) ps
 
@@ -241,8 +240,8 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
         promotion = shouldPromote player1 dest
         -- COMMON END
 
-        -- * JUMPS: get the figure inbetween from the board with the player's original piece already removed
-        figinbetween = fromJust $ getSquare boardFigRemovedPlayer (fromJust inbetween)
+        -- JUMPS: get the figure inbetween from the board with the player's original piece already removed
+        -- figinbetween = fromJust $ getSquare boardFigRemovedPlayer (fromJust inbetween)
         -- * JUMPS: board bar the figure inbetween
         boardInbetweenRemoved = setSquare boardFigRemovedPlayer Empty (fromJust inbetween)
         
@@ -265,7 +264,7 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
 -- if there are any jumps available only consider those
 -- pass the list of availables to each auxiliary function requiring it for efficiency
 performMoveAI :: GameState -> GameState
-performMoveAI oldGameState@(GameState (VectorBoard b) player1)
+performMoveAI oldGameState
     | not . null $ availableJumps = performJump oldGameState (selectJump availableJumps)
     | not . null $ availableSimpleMoves  = performSimpleMove oldGameState (selectSimpleMove availableSimpleMoves)
     | otherwise = oldGameState
@@ -294,7 +293,7 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
         
         -- * REMOVE THE FIGURE AT THE INBETWEEN POSITION
         -- get the figure inbetween from the board with the player's original piece already removed
-        figinbetween = fromJust $ getSquare boardFigRemovedPlayer inbtwn
+        -- figinbetween = fromJust $ getSquare boardFigRemovedPlayer inbtwn
         -- return a board bar the figure inbetween
         boardInbetweenRemoved = setSquare boardFigRemovedPlayer Empty inbtwn
 
