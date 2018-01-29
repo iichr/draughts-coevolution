@@ -108,6 +108,7 @@ canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0
 
 -- same as above, specifically for a jump move
 -- deals with arguments passed in the form of (destination, position of piece inbetween)
+-- for checking what figure is inbetween see jump
 canJumpInto :: VectorBoard -> (Position, Position) -> Bool
 canJumpInto (VectorBoard b) ((row,col), inbetween) = canMoveInto (VectorBoard b) (row,col)
 

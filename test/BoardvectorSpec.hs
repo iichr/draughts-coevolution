@@ -10,6 +10,13 @@ getBoardFromState :: GameState -> VectorBoard
 getBoardFromState gamestate@(GameState (VectorBoard b) _) = VectorBoard b
 -- also useful (\(VectorBoard x)->x) board
 
+sampleBoard :: VectorBoard
+sampleBoard = emptyBoard 
+    where
+        emptyBoard = VectorBoard $ (V.replicate 8 (V.replicate 8 Empty))
+        
+
+
 spec :: Spec
 spec = do
     describe "getSquare" $ do
@@ -97,6 +104,7 @@ spec = do
             getInbetweenPosition ((1,3),(2,3)) [((2,3),((4,5),(6,7))), ((7,8),((2,3),(4,9))), ((1,3),((3,3),(0,0)))]
             `shouldBe` Nothing
 
+   
 
 
 -- Test getPlayerMoves
