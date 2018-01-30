@@ -5,6 +5,9 @@ import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
 
+import Data.Vector.Unboxed (create, freeze)
+import qualified Data.Vector.Unboxed.Mutable as UV
+
 -- DATA TYPES
 
 data Player = Black | White
@@ -17,6 +20,8 @@ data Square = Empty | Tile Player Figure
     deriving Eq
 
 type Position = (Int, Int)
+
+type Weight = Float
 
 data VectorBoard = VectorBoard (V.Vector (V.Vector Square))
     deriving Eq
@@ -339,3 +344,8 @@ performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) 
 -- return an origin, destination tuple
 selectSimpleMove :: [(Position, Position)] -> (Position, Position)
 selectSimpleMove = undefined
+
+-- convert a position in a 2D array in the row, column format to a 1D index
+-- zero-indexed
+convertPos2Index :: Position -> Int
+convertPos2Index (row, col) = row * 8 + col

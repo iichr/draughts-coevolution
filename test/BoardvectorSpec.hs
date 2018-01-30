@@ -177,6 +177,12 @@ spec = do
         it "returns Nothing if list of positions to search through is empty" $ do
             getInbetweenPosition ((1,3),(2,3)) [((2,3),((4,5),(6,7))), ((7,8),((2,3),(4,9))), ((1,3),((3,3),(0,0)))]
             `shouldBe` Nothing
+    
+    describe "convertPos2Index" $ do
+        it "given a board position converts it to an index in a 1D array" $ do
+            map convertPos2Index [(0,0), (0,5), (0,7), (2,4), (2,5), (3,3), (3,7), (4,0), (5,1), (6,3), (6,6), (6,7), (7,0), (7,2), (7,7)]
+            `shouldBe`
+            [0, 5, 7, 20, 21, 27, 31, 32, 41, 51, 54, 55, 56, 58, 63] 
    
 
 
