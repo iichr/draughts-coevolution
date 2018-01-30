@@ -5,15 +5,89 @@ import Boardvector
 import qualified Data.Vector as V
 import Data.Maybe (fromMaybe, fromJust)
 
-
 getBoardFromState :: GameState -> VectorBoard
-getBoardFromState gamestate@(GameState (VectorBoard b) _) = VectorBoard b
+getBoardFromState (GameState (VectorBoard b) _) = VectorBoard b
 -- also useful (\(VectorBoard x)->x) board
 
-sampleBoard :: VectorBoard
-sampleBoard = emptyBoard 
-    where
-        emptyBoard = VectorBoard $ (V.replicate 8 (V.replicate 8 Empty))
+testBoard2 :: VectorBoard
+testBoard2 = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, r7] where
+    b = Tile Black Man
+    w = Tile White Man
+    --bk = Tile Black King
+    --wk = Tile White King
+    --empty = V.replicate 8 Empty
+    r0 = generateRow [7] b
+    r1 = generateRow [2,4,6] b
+    r2 = generateRow [3,5,7] b
+    r3 = generateRow [0,2] b
+    r4 = fullRow [1] b [3,5,7] w
+    r5 = generateRow [0,2,4,6] w
+    r6 = generateRow [3,7] w
+    r7 =  generateRow [0] w
+
+testBoard3 :: VectorBoard
+testBoard3 = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, empty] where
+    b = Tile Black Man
+    w = Tile White Man
+    wk = Tile White King
+    empty = V.replicate 8 Empty
+    r0 = generateRow [1] wk
+    r1 = generateRow [4] wk
+    r2 = generateRow [3] w
+    r3 = generateRow [0,2,6] b
+    r4 = fullRow [1,3] b [7] w
+    r5 = generateRow [0,6] w
+    r6 = generateRow [1,3,7] w
+
+testBoard4 :: VectorBoard
+testBoard4 = VectorBoard $ V.fromList [r0, r1, r2, empty, r4, r5, r6, r7]  where
+    b = Tile Black Man
+    w = Tile White Man
+    bk = Tile Black King
+    empty = V.replicate 8 Empty
+    r0 = generateRow [7] b
+    r1 = generateRow [0,4,6] b
+    r2 = generateRow [1,3,5] b
+    r4 = fullRow [1,5] w [7] b
+    r5 = generateRow [0] w
+    r6 = fullRow [1,5] w [7] b
+    r7 = fullRow [0] w [2] bk
+
+
+testBoard1 :: VectorBoard
+testBoard1 = VectorBoard $ V.fromList [r0, r1, r2, empty, r4, empty, r6, empty] where  
+        b = Tile Black Man
+        w = Tile White Man
+        bk = Tile Black King
+        empty = V.replicate 8 Empty
+        r0 = generateRow [1,3,5,7] b
+        r1 = generateRow [4] b
+        r2 = fullRow [1] w [7] b
+        r4 = fullRow [7] w [5] bk
+        r6 = fullRow [2] b [7] w
+
+-- Endspiel board
+testBoard5 :: VectorBoard
+testBoard5 = VectorBoard $ V.fromList [r0, r1, r2, empty, empty, r5, r6, r7] where
+    bk = Tile Black King
+    wk = Tile White King
+    empty = V.replicate 8 Empty
+    r0 = generateRow [1,3,5,7] wk
+    r1 = generateRow [2] wk
+    r2 = generateRow [3,5] wk
+    r5 = generateRow [2] bk
+    r6 = generateRow [3] bk
+    r7 = generateRow [2] bk
+
+
+generateRow :: [Int] -> Square -> V.Vector Square
+generateRow ys sq = V.replicate 8 Empty V.// (\x -> [(z,sq) | z <- x]) ys
+
+changeRow :: V.Vector Square -> [Int] -> Square -> V.Vector Square
+changeRow vect ys sq = vect V.// (\x -> [(z,sq) | z <- x]) ys
+
+fullRow :: [Int] -> Square -> [Int] -> Square -> V.Vector Square
+fullRow xs s1 ys x2 = changeRow (generateRow xs s1) ys x2
         
 
 
@@ -103,7 +177,6 @@ spec = do
         it "returns Nothing if list of positions to search through is empty" $ do
             getInbetweenPosition ((1,3),(2,3)) [((2,3),((4,5),(6,7))), ((7,8),((2,3),(4,9))), ((1,3),((3,3),(0,0)))]
             `shouldBe` Nothing
-
    
 
 
