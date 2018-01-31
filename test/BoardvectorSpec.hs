@@ -9,6 +9,16 @@ getBoardFromState :: GameState -> VectorBoard
 getBoardFromState (GameState (VectorBoard b) _) = VectorBoard b
 -- also useful (\(VectorBoard x)->x) board
 
+whiteLostBoard :: VectorBoard
+whiteLostBoard = VectorBoard $ V.fromList [r0, empty, empty, r3, empty, empty, r6, empty] where
+    empty = V.replicate 8 Empty
+    bk = Tile Black King
+    b = Tile Black Man
+    r0 = generateRow [1,5] bk
+    r3 = generateRow [0,2,4] b
+    r6 = generateRow [3,5,7] bk
+
+
 testBoard2 :: VectorBoard
 testBoard2 = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, r7] where
     b = Tile Black Man
@@ -184,22 +194,29 @@ spec = do
             `shouldBe`
             [0, 5, 7, 20, 21, 27, 31, 32, 41, 51, 54, 55, 56, 58, 63] 
     
-        describe "getSum" $ do
-            it "gets the weighted piece differential of different boards" $ do
-                let b = pieceVal (Tile Black Man)
-                let bk = pieceVal (Tile Black King)
-                let w = pieceVal (Tile White Man)
-                let wk = pieceVal (Tile White King)
-                getSum (GameState testBoard5 White) `shouldBe` 7*wk + 3*bk
-                getSum (GameState testBoard1 White) `shouldBe` bk + 7*b + 3*w
-                getSum (GameState testBoard4 White) `shouldBe` 6*w + 9*b + bk
-                getSum (GameState testBoard3 White) `shouldBe` 5*b + 2*wk + 7*w
-            it "of the initialBoard should be 0.0" $ do
-                getSum (GameState initialBoard White) `shouldBe` 0.0
-            
+    describe "getSum" $ do
+        it "gets the weighted piece differential of different boards" $ do
+            let b = pieceVal (Tile Black Man)
+            let bk = pieceVal (Tile Black King)
+            let w = pieceVal (Tile White Man)
+            let wk = pieceVal (Tile White King)
+            getSum (GameState testBoard5 White) `shouldBe` 7*wk + 3*bk
+            getSum (GameState testBoard1 White) `shouldBe` bk + 7*b + 3*w
+            getSum (GameState testBoard4 White) `shouldBe` 6*w + 9*b + bk
+            getSum (GameState testBoard3 White) `shouldBe` 5*b + 2*wk + 7*w
+        it "of the initialBoard should be 0.0" $ do
+            getSum (GameState initialBoard White) `shouldBe` 0.0
+        
+    describe "figureCount" $ do
+        it "given an empty board should not crash but return 0 figures each" $ do
+            figureCount (VectorBoard $ V.replicate 8 (V.replicate 8 Empty)) `shouldBe` (0,0)
+        it "given a non-empty board should return the number of Black and White figures in a tuple in that order" $ do
+            figureCount initialBoard `shouldBe` (12,12)
+            figureCount testBoard5 `shouldBe` (3,7)
+            figureCount testBoard1 `shouldBe` (8,3)
+            figureCount testBoard2 `shouldBe` (10,10)
+            figureCount testBoard4 `shouldBe` (10,6)
 
-                
-   
 
 
 -- Test getPlayerMoves

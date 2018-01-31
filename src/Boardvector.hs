@@ -1,6 +1,6 @@
 module Boardvector where
 
-import Data.List (intersperse, concat)
+import Data.List (intersperse, concat, foldl')
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
@@ -364,6 +364,19 @@ selectSimpleMove xs =  x
         randnum = randomR (0, length xs - 1) (mkStdGen 64572)
         x = xs !! fst randnum
 
+-- Get the number of figures each player has on the board, with the result in the form of (Black, White)
+figureCount :: VectorBoard -> (Int,Int)
+-- fold on current element tuple and the rest of the list, matching on it
+figureCount board = foldl' (\(b,w) r -> case r of 
+                                            Just (Tile Black _) -> (b+1,w)
+                                            Just (Tile White _) -> (b,w+1)
+                                            _ -> (b,w)
+                            ) (0,0) sqs where
+   sqs = filter (\n -> n /= Just Empty) [getSquare board (row, col) | row <- [0..7], col <- [0..7]]
+
+-- Has the game been won by anyone yet, if not return Nothing, else - the winner
+won :: GameState -> Maybe Player
+won gs@(GameState (VectorBoard b) player1) = undefined
 
 -- ********************
 -- ***** WEIGHTS ******
