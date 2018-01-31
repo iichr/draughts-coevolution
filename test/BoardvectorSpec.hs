@@ -183,6 +183,10 @@ spec = do
             map convertPos2Index [(0,0), (0,5), (0,7), (2,4), (2,5), (3,3), (3,7), (4,0), (5,1), (6,3), (6,6), (6,7), (7,0), (7,2), (7,7)]
             `shouldBe`
             [0, 5, 7, 20, 21, 27, 31, 32, 41, 51, 54, 55, 56, 58, 63] 
+    
+        describe "getSum" $ do
+            it "gets the weighted piece differential of a board using" $ do
+                getSum (GameState testBoard5 White) `shouldBe` 7.0*5 + 3*(-5)
    
 
 

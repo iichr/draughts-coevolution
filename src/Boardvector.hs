@@ -23,7 +23,7 @@ data Square = Empty | Tile Player Figure
 
 type Position = (Int, Int)
 
-type Weight = Float
+type Weight = Double
 
 data VectorBoard = VectorBoard (V.Vector (V.Vector Square))
     deriving Eq
@@ -359,9 +359,28 @@ selectSimpleMove xs =  x
         randnum = randomR (0, length xs - 1) (mkStdGen 64572)
         x = xs !! (fst randnum)
 
-getSum :: GameState -> Float
-getSum gs@(GameState (VectorBoard b) player) = undefined
+getSum :: GameState -> Double
+getSum gs = foldr (+) 0.0 $ getVectortoSum gs 
+        where    
+            getVectortoSum :: GameState -> [Double]
+            getVectortoSum gs@(GameState (VectorBoard b) _) = do
+                row <- [0..7]
+                col <- [0..7]
+                let pos = (row, col)
+                let square = fromJust $ getSquare (VectorBoard b) pos
+                let i = convertPos2Index pos
+                let weightsvector = makeWeightinit
+                let weight = weightsvector UV.! i
+                let w = pieceVal square * weight
+                return w
 
+
+pieceVal :: Square -> Double
+pieceVal (Tile Black Man) = -1.0
+pieceVal (Tile Black King) = -5.0
+pieceVal (Tile White Man) = 1.0
+pieceVal (Tile White King) = 5.0
+pieceVal Empty = 0.0
 
 -- convert a position in a 2D array in the row, column format to a 1D index
 -- zero-indexed
@@ -373,10 +392,9 @@ updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
     -- loop through the whole board, getting the coordinates and what square is there
     -- pattern match on square, assigning a value
 
-
 makeWeightinit :: UV.Vector Weight
 makeWeightinit = UV.create $ do
-    zeroed <- MUV.replicate 64 (1.0 :: Float)
+    zeroed <- MUV.replicate 64 (1.0 :: Double)
     return zeroed
 
 
