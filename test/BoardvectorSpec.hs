@@ -185,8 +185,20 @@ spec = do
             [0, 5, 7, 20, 21, 27, 31, 32, 41, 51, 54, 55, 56, 58, 63] 
     
         describe "getSum" $ do
-            it "gets the weighted piece differential of a board using" $ do
-                getSum (GameState testBoard5 White) `shouldBe` 7.0*5 + 3*(-5)
+            it "gets the weighted piece differential of different boards" $ do
+                let b = pieceVal (Tile Black Man)
+                let bk = pieceVal (Tile Black King)
+                let w = pieceVal (Tile White Man)
+                let wk = pieceVal (Tile White King)
+                getSum (GameState testBoard5 White) `shouldBe` 7*wk + 3*bk
+                getSum (GameState testBoard1 White) `shouldBe` bk + 7*b + 3*w
+                getSum (GameState testBoard4 White) `shouldBe` 6*w + 9*b + bk
+                getSum (GameState testBoard3 White) `shouldBe` 5*b + 2*wk + 7*w
+            it "of the initialBoard should be 0.0" $ do
+                getSum (GameState initialBoard White) `shouldBe` 0.0
+            
+
+                
    
 
 

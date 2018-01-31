@@ -53,7 +53,12 @@ instance Show VectorBoard where
 instance Show GameState where
     show (GameState board player) = 
         show board ++ show player ++ "\n"
-    
+
+        
+-- convert a position in a 2D array in the row, column format to a 1D index; zero-indexed
+convertPos2Index :: Position -> Int
+convertPos2Index (row, col) = row * 8 + col
+
 initialBoard :: VectorBoard
 -- each elem in the concat is of type V.Vector (V.Vector Square)
 initialBoard = VectorBoard $ V.concat[V.replicate 1 (initialOddRow blackrow),
@@ -197,7 +202,7 @@ getSimpleMoves (GameState (VectorBoard b) player) = do
 
 -- * Get all jumps a player can perform given a GameState, with results
 -- * listed in the form of [(ORIGIN position), (DESTINATION position, position of square INBETWEEN to be jumped)]
-getJumps :: GameState -> [((Position), ((Position), (Position)))]
+getJumps :: GameState -> [(Position, (Position, Position))]
 getJumps (GameState (VectorBoard b) player) = do
     row <- [0..7]
     col <- [0..7]
@@ -205,20 +210,20 @@ getJumps (GameState (VectorBoard b) player) = do
     let square = getSquare (VectorBoard b) src
     let jumps = jump (VectorBoard b) src
     if whoseTile square player
-        then map ((,) src) $ jumps
+        then map ((,) src) jumps
         else []
 
 -- Given an origin and destination position tuple and a list of triplets of jump positions
 -- in the form of (origin, (destination, inbetween)) find the tuple in the list and 
 -- extract the position of the square inbetween the origin and destination if it exists
-getInbetweenPosition :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Maybe Position
+getInbetweenPosition :: (Position, Position) -> [(Position, (Position, Position))] -> Maybe Position
 getInbetweenPosition _ [] = Nothing
 getInbetweenPosition (orig, dest) ((o,(d,i)):ps) 
     | orig == o && dest == d = Just i
     | otherwise = getInbetweenPosition (orig, dest) ps
 
 -- Check if a both elements of tuple of origin and destination positions are members of a list of triplets
-elemTriplet :: (Position, Position) -> [((Position), ((Position), (Position)))] -> Bool
+elemTriplet :: (Position, Position) -> [(Position, (Position, Position))] -> Bool
 elemTriplet _ [] = False
 elemTriplet (x,y) ((k,(l,_)):ps)
     | x == k && y == l = True
@@ -318,11 +323,11 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
 -- * Temporary solution : using a fixed seed "random" number generator for demonstration purposes
 -- * move selection will not be this type of random in the future
 -- avoid IO monad
-selectJump :: [((Position), ((Position), (Position)))] -> (Position, Position, Position)
+selectJump :: [(Position, (Position, Position))] -> (Position, Position, Position)
 selectJump xs = (fst x, snd $ snd x, fst $ snd x) 
     where
         randnum = randomR (0, length xs - 1) (mkStdGen 7839)
-        x = xs !! (fst randnum)
+        x = xs !! fst randnum
 
 
 -- !!!!!!!!!!!!!!!!!!!
@@ -357,8 +362,44 @@ selectSimpleMove :: [(Position, Position)] -> (Position, Position)
 selectSimpleMove xs =  x
     where
         randnum = randomR (0, length xs - 1) (mkStdGen 64572)
-        x = xs !! (fst randnum)
+        x = xs !! fst randnum
 
+
+-- ********************
+-- ***** WEIGHTS ******
+-- ********************
+
+-- Construct an initial vector storing the weight of each board square
+-- Unboxed for efficienct - consecutive memory slots without pointers.
+-- TODO: actual values
+makeWeightinit :: UV.Vector Weight
+makeWeightinit = UV.create $ do
+    MUV.replicate 64 (1.0 :: Double)
+
+-- Update a weight vector as a result of a run
+-- Use mutability to increase efficiency as frequent changes will be made
+-- TODO: implement
+updateWeightMutably :: UV.Vector Weight -> GameState -> UV.Vector Weight
+updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
+
+
+-- ***************************
+-- ***** WEIGHTED PIECES *****
+-- ***************************
+
+-- Assign to each piece a value, used in the evaluation of each board
+-- positive for White
+-- negative for Black
+pieceVal :: Square -> Double
+pieceVal (Tile Black Man) = -1.0
+pieceVal (Tile Black King) = -5.0
+pieceVal (Tile White Man) = 1.0
+pieceVal (Tile White King) = 5.0
+pieceVal Empty = 0.0
+
+-- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
+-- from the weights vector; a positive result: Player White has an advantage, Black does not, 
+-- and vice versa for a negative result
 getSum :: GameState -> Double
 getSum gs = foldr (+) 0.0 $ getVectortoSum gs 
         where    
@@ -375,26 +416,5 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
                 return w
 
 
-pieceVal :: Square -> Double
-pieceVal (Tile Black Man) = -1.0
-pieceVal (Tile Black King) = -5.0
-pieceVal (Tile White Man) = 1.0
-pieceVal (Tile White King) = 5.0
-pieceVal Empty = 0.0
-
--- convert a position in a 2D array in the row, column format to a 1D index
--- zero-indexed
-convertPos2Index :: Position -> Int
-convertPos2Index (row, col) = row * 8 + col
-
-updateWeightMutably :: UV.Vector Weight -> GameState -> UV.Vector Weight
-updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
-    -- loop through the whole board, getting the coordinates and what square is there
-    -- pattern match on square, assigning a value
-
-makeWeightinit :: UV.Vector Weight
-makeWeightinit = UV.create $ do
-    zeroed <- MUV.replicate 64 (1.0 :: Double)
-    return zeroed
 
 
