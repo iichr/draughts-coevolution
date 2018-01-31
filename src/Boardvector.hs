@@ -4,9 +4,11 @@ import Data.List (intersperse, concat)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
+import System.Random
 
 import Data.Vector.Unboxed (create, freeze)
-import qualified Data.Vector.Unboxed.Mutable as UV
+import qualified Data.Vector.Unboxed as UV
+import qualified Data.Vector.Unboxed.Mutable as MUV
 
 -- DATA TYPES
 
@@ -312,15 +314,21 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
 
 
 
--- return an (origin, inbetween, destination) tuple
--- needs to handle inbetween, extract and return it as a **non Maybe type** as part of the new tuple
+-- Return an (origin, inbetween, destination) tuple
+-- * Temporary solution : using a fixed seed "random" number generator for demonstration purposes
+-- * move selection will not be this type of random in the future
+-- avoid IO monad
 selectJump :: [((Position), ((Position), (Position)))] -> (Position, Position, Position)
-selectJump = undefined
+selectJump xs = (fst x, snd $ snd x, fst $ snd x) 
+    where
+        randnum = randomR (0, length xs - 1) (mkStdGen 7839)
+        x = xs !! (fst randnum)
 
 
 -- !!!!!!!!!!!!!!!!!!!
 -- ! SIMPLE MOVES
 -- !!!!!!!!!!!!!!!!!!!
+
 -- ! NOT SAFE FOR HUMANS - DOES NOT VERIFY MOVE VALIDITY
 -- Players will be predetermined and will only have access to the list of available moves to choose from
 -- hence a second check for move validity is redundant
@@ -341,11 +349,34 @@ performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) 
                 then setSquare boardFigRemovedPlayer (kingify fig) dest
                 else setSquare boardFigRemovedPlayer fig dest
 
--- return an origin, destination tuple
+-- Return an origin, destination tuple
+-- * Temporary solution : using a fixed seed "random" number generator for demonstration purposes
+-- * move selection will not be this type of random in the future
+-- avoid IO Monad
 selectSimpleMove :: [(Position, Position)] -> (Position, Position)
-selectSimpleMove = undefined
+selectSimpleMove xs =  x
+    where
+        randnum = randomR (0, length xs - 1) (mkStdGen 64572)
+        x = xs !! (fst randnum)
+
+getSum :: GameState -> Float
+getSum gs@(GameState (VectorBoard b) player) = undefined
+
 
 -- convert a position in a 2D array in the row, column format to a 1D index
 -- zero-indexed
 convertPos2Index :: Position -> Int
 convertPos2Index (row, col) = row * 8 + col
+
+updateWeightMutably :: UV.Vector Weight -> GameState -> UV.Vector Weight
+updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
+    -- loop through the whole board, getting the coordinates and what square is there
+    -- pattern match on square, assigning a value
+
+
+makeWeightinit :: UV.Vector Weight
+makeWeightinit = UV.create $ do
+    zeroed <- MUV.replicate 64 (1.0 :: Float)
+    return zeroed
+
+
