@@ -8,7 +8,7 @@ import System.Random
 
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
-import qualified Data.Vector.Unboxed.Mutable as MUV
+-- import qualified Data.Vector.Unboxed.Mutable as MUV
 
 -- DATA TYPES
 
@@ -52,7 +52,7 @@ instance Show VectorBoard where
 
 instance Show GameState where
     show (GameState board player) = 
-        show board ++ show player ++ "\n"
+        show board ++ show player
 
         
 -- convert a position in a 2D array in the row, column format to a 1D index; zero-indexed
@@ -150,35 +150,36 @@ jump (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- whiteZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty]
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing]
                                 ]
 
         |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- blackZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty]
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing]
                                 ]
                                                                                                         
         |Just (Tile White King) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty]
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing]
                                 ]
 
         |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty]
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing]
                                 ]
                                                
         |otherwise = []
     where
         -- mind the order inside for zip to work properly!
+        -- apply filter if necessary: filter (\n -> (getSquare (VectorBoard b) n) /= Nothing)
         whiteInbetween = [(row-1, col-1), (row-1, col+1)]
         blackInbetween = [(row+1, col-1), (row+1, col+1)]
-
-        whiteJumps = [(row-2, col-2), (row-2, col+2)]
-        blackJumps = [(row+2, col-2), (row+2, col+2)]
+    
+        whiteJumps = filter (\n -> (getSquare (VectorBoard b) n) /= Nothing) [(row-2, col-2), (row-2, col+2)]
+        blackJumps = filter (\n -> (getSquare (VectorBoard b) n) /= Nothing) [(row+2, col-2), (row+2, col+2)]
 
         -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
         whiteZippedPath = zip whiteJumps whiteInbetween
@@ -326,7 +327,7 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
 selectJump :: [(Position, (Position, Position))] -> (Position, Position, Position)
 selectJump xs = (fst x, snd $ snd x, fst $ snd x) 
     where
-        randnum = randomR (0, length xs - 1) (mkStdGen 7839)
+        randnum = randomR (0, length xs - 1) (mkStdGen 432)
         x = xs !! fst randnum
 
 
@@ -361,7 +362,7 @@ performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) 
 selectSimpleMove :: [(Position, Position)] -> (Position, Position)
 selectSimpleMove xs =  x
     where
-        randnum = randomR (0, length xs - 1) (mkStdGen 64572)
+        randnum = randomR (0, length xs - 1) (mkStdGen 429834)
         x = xs !! fst randnum
 
         
@@ -402,8 +403,9 @@ whoWon gs@(GameState (VectorBoard b) player1) = winner (figureCount (VectorBoard
 -- Unboxed for efficienct - consecutive memory slots without pointers.
 -- TODO: actual values
 makeWeightinit :: UV.Vector Weight
-makeWeightinit = UV.create $ do
-    MUV.replicate 64 (1.0 :: Double)
+-- makeWeightinit = UV.create $ do
+--     MUV.replicate 64 (1.0 :: Double)
+makeWeightinit = UV.replicate 64 (1.0 :: Double)
 
 -- Update a weight vector as a result of a run
 -- Use mutability to increase efficiency as frequent changes will be made
@@ -445,5 +447,22 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
                 return w
 
 
+-- ********************
+-- ***** RUN GAME *****
+-- ********************
+-- TODO: fix index out of bounds
+aiNextState :: GameState -> IO GameState
+aiNextState gs = return $ performMoveAI gs
 
-
+play :: (GameState -> IO GameState) -> (GameState -> IO GameState) -> GameState -> IO ()
+play ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
+    putStrLn ((show gs) ++ "| Board sum " ++  (show boardSum) ++ "\n")
+    -- play until there is a winner
+    case whoWon gs of
+        Just player -> putStrLn $ show player ++ " HAS WON."
+        Nothing -> do
+            nextstate <- getNextState gs
+            play ai1 ai2 nextstate
+    where
+        getNextState = if player1 == Black then ai1 else ai2
+        boardSum = getSum gs
