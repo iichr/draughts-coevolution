@@ -364,6 +364,11 @@ selectSimpleMove xs =  x
         randnum = randomR (0, length xs - 1) (mkStdGen 64572)
         x = xs !! fst randnum
 
+        
+-- ********************************
+-- ***** WIN/END OF GAME **********
+-- ********************************
+
 -- Get the number of figures each player has on the board, with the result in the form of (Black, White)
 figureCount :: VectorBoard -> (Int,Int)
 -- fold on current element tuple and the rest of the list, matching on it
@@ -375,8 +380,19 @@ figureCount board = foldl' (\(b,w) r -> case r of
    sqs = filter (\n -> n /= Just Empty) [getSquare board (row, col) | row <- [0..7], col <- [0..7]]
 
 -- Has the game been won by anyone yet, if not return Nothing, else - the winner
-won :: GameState -> Maybe Player
-won gs@(GameState (VectorBoard b) player1) = undefined
+-- getting the available moves first is inefficient, first check the number of tiles
+whoWon :: GameState -> Maybe Player
+whoWon gs@(GameState (VectorBoard b) player1) = winner (figureCount (VectorBoard b))
+    where
+        availableJumps = getJumps gs
+        availableSimpleMoves = getSimpleMoves gs
+        winner :: (Int,Int) -> Maybe Player
+        winner (0,_) = Just White
+        winner (_,0) = Just Black
+        winner _ = if null availableSimpleMoves && null availableJumps 
+                   then Just $ oppositeOf player1 
+                   else Nothing
+
 
 -- ********************
 -- ***** WEIGHTS ******

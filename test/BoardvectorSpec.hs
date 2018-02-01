@@ -217,6 +217,16 @@ spec = do
             figureCount testBoard2 `shouldBe` (10,10)
             figureCount testBoard4 `shouldBe` (10,6)
 
+    describe "whoWon" $ do
+        it "should return that a player has won if there are no figures belonging to the opponent on the board" $ do
+            whoWon (GameState whiteLostBoard White) `shouldBe` Just Black
+            whoWon (GameState whiteLostBoard Black) `shouldBe` Just Black
+        it "should return Nothing if both players still have figures left on the board" $ do
+            whoWon (GameState testBoard1 Black) `shouldBe` Nothing
+            whoWon (GameState testBoard2 White) `shouldBe` Nothing
+            whoWon (GameState testBoard3 Black) `shouldBe` Nothing
+            whoWon (GameState testBoard4 White) `shouldBe` Nothing
+            whoWon (GameState testBoard5 Black) `shouldBe` Nothing
 
 
 -- Test getPlayerMoves
