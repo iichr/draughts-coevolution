@@ -4,7 +4,6 @@ import Data.List (intersperse, concat, foldl')
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
-import System.Random
 
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
@@ -224,7 +223,12 @@ elemTriplet (x,y) ((k,(l,_)):ps)
     | x == k && y == l = True
     | otherwise = elemTriplet (x,y) ps
 
--- SAFE FOR HUMAN PLAYERS - MOVES ARE VALIDATED
+
+-- **********************************************************************
+-- ******************************* MOVE EXECUTION ***********************
+-- ***! SUITABLE FOR HUMAN PLAYERS AS MOVES ARE CHECKED FOR VALIDITY !***
+-- **********************************************************************
+
 -- Execute a move to a location given a source position and a gameState
 -- returning a new gameState accepting the opposing player's turn
 performMove :: GameState -> Position -> Position -> GameState
@@ -267,25 +271,31 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
                 else setSquare boardInbetweenRemoved fig dest
 
 
--- Given a game state return a new game state with the next player's turn
--- and the move of the previous player executed
--- if there are any jumps available only consider those
--- pass the list of availables to each auxiliary function requiring it for efficiency
-performMoveAI :: GameState -> GameState
-performMoveAI oldGameState
-    | not . null $ availableJumps = performJump oldGameState (selectJump availableJumps)
-    | not . null $ availableSimpleMoves  = performSimpleMove oldGameState (selectSimpleMove availableSimpleMoves)
-    | otherwise = oldGameState
+-- *********************************
+-- ******** MOVE EXECUTION *********
+-- *****! ONLY FOR AI PLAYERS !*****
+-- *********************************
+
+-- Players will be predetermined and will only have access to the list of available moves to choose from
+-- hence a second check for move validity is redundant
+performSimpleMove :: GameState -> (Position, Position) -> GameState
+performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) = GameState newBoardSimple player2
     where
-        availableJumps = getJumps oldGameState
-        availableSimpleMoves = getSimpleMoves oldGameState
+         player2 = oppositeOf player1
+         -- get the figure at the original position
+         fig = fromJust $ getSquare (VectorBoard b) orig
+         -- remove that figure and return a board without it
+         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
+         -- check destination position for promotion, true if yes
+         promotion = shouldPromote player1 dest
+         -- return the new board
+         newBoardSimple =
+            if promotion
+                -- add promoted figure to the newBoard destination position
+                then setSquare boardFigRemovedPlayer (kingify fig) dest
+                else setSquare boardFigRemovedPlayer fig dest
 
 
--- !!!!!!!!!!!!!!!!!!
--- ! JUMPS
--- !!!!!!!!!!!!!!!!!!
-
--- ! NOT SAFE FOR HUMANS - DOES NOT VERIFY MOVE VALIDITY
 -- Players will be predetermined and will only have access to the list of available moves to choose from
 -- hence a second check for move validity is redundant
 performJump :: GameState -> (Position, Position, Position) -> GameState
@@ -313,53 +323,6 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
                 else setSquare boardInbetweenRemoved fig dest
 
 
-
--- Return an (origin, inbetween, destination) tuple
--- * Temporary solution : using a fixed seed "random" number generator for demonstration purposes
--- * move selection will not be this type of random in the future
--- avoid IO monad
-selectJump :: [(Position, (Position, Position))] -> (Position, Position, Position)
-selectJump xs = (fst x, snd $ snd x, fst $ snd x) 
-    where
-        randnum = randomR (0, length xs - 1) (mkStdGen 432)
-        x = xs !! fst randnum
-
-
--- !!!!!!!!!!!!!!!!!!!
--- ! SIMPLE MOVES
--- !!!!!!!!!!!!!!!!!!!
-
--- ! NOT SAFE FOR HUMANS - DOES NOT VERIFY MOVE VALIDITY
--- Players will be predetermined and will only have access to the list of available moves to choose from
--- hence a second check for move validity is redundant
-performSimpleMove :: GameState -> (Position, Position) -> GameState
-performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) = GameState newBoardSimple player2
-    where
-         player2 = oppositeOf player1
-         -- get the figure at the original position
-         fig = fromJust $ getSquare (VectorBoard b) orig
-         -- remove that figure and return a board without it
-         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
-         -- check destination position for promotion, true if yes
-         promotion = shouldPromote player1 dest
-         -- return the new board
-         newBoardSimple =
-            if promotion
-                -- add promoted figure to the newBoard destination position
-                then setSquare boardFigRemovedPlayer (kingify fig) dest
-                else setSquare boardFigRemovedPlayer fig dest
-
--- Return an origin, destination tuple
--- * Temporary solution : using a fixed seed "random" number generator for demonstration purposes
--- * move selection will not be this type of random in the future
--- avoid IO Monad
-selectSimpleMove :: [(Position, Position)] -> (Position, Position)
-selectSimpleMove xs =  x
-    where
-        randnum = randomR (0, length xs - 1) (mkStdGen 429834)
-        x = xs !! fst randnum
-
-        
 -- ********************************
 -- ***** WIN/END OF GAME **********
 -- ********************************
@@ -444,8 +407,6 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
 -- ********************
 -- ***** RUN GAME *****
 -- ********************
-aiNextState :: GameState -> IO GameState
-aiNextState gs = return $ performMoveAI gs
 
 play :: (GameState -> IO GameState) -> (GameState -> IO GameState) -> GameState -> IO ()
 play ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
