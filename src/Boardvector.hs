@@ -115,14 +115,8 @@ oppositeOf White = Black
 oppositeOf Black = White
 
 -- check whether a given position is within the range of the board and EMPTY as well
-canMoveInto :: VectorBoard -> Position -> Bool
-canMoveInto (VectorBoard b) dest@(row, col) = row<8 && row>=0 && col<8 && col>=0 && getSquare (VectorBoard b) dest == Just Empty
-
--- same as above, specifically for a jump move
--- deals with arguments passed in the form of (destination, position of piece inbetween)
--- for checking what figure is inbetween see jump
-canJumpInto :: VectorBoard -> (Position, Position) -> Bool
-canJumpInto (VectorBoard b) ((row,col), inbetween) = canMoveInto (VectorBoard b) (row,col)
+canMoveIntoDest :: VectorBoard -> Position -> Bool
+canMoveIntoDest (VectorBoard b) dest = getSquare (VectorBoard b) dest == Just Empty &&  getSquare (VectorBoard b) dest /= Nothing
 
 -- A simple move consists of either:
 -- moving an uncrowned piece one square FORWARD DIAGONALLY to an adjacent unoccupied dark square, or
@@ -130,11 +124,11 @@ canJumpInto (VectorBoard b) ((row,col), inbetween) = canMoveInto (VectorBoard b)
 simpleMove :: VectorBoard -> Position -> [Position]
 simpleMove (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) whiteMoves
+            filter (canMoveIntoDest (VectorBoard b)) whiteMoves
         |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) blackMoves
+            filter (canMoveIntoDest (VectorBoard b)) blackMoves
         |Just (Tile _ King) <- getSquare (VectorBoard b) orig =
-            filter (canMoveInto (VectorBoard b)) kingMoves
+            filter (canMoveIntoDest (VectorBoard b)) kingMoves
         |otherwise = []
     where
         whiteMoves = [(row-1, col-1), (row-1, col+1)]
@@ -149,7 +143,7 @@ jump :: VectorBoard -> Position -> [(Position,Position)]
 jump (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- whiteZippedPath, 
-                                let z = getSquare (VectorBoard b) inbetween, 
+                                let z = getSquare (VectorBoard b) inbetween,
                                 notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing]
                                 ]
 
@@ -178,8 +172,8 @@ jump (VectorBoard b) orig@(row, col)
         whiteInbetween = [(row-1, col-1), (row-1, col+1)]
         blackInbetween = [(row+1, col-1), (row+1, col+1)]
     
-        whiteJumps = filter (\n -> (getSquare (VectorBoard b) n) /= Nothing) [(row-2, col-2), (row-2, col+2)]
-        blackJumps = filter (\n -> (getSquare (VectorBoard b) n) /= Nothing) [(row+2, col-2), (row+2, col+2)]
+        whiteJumps = filter (\n -> canMoveIntoDest (VectorBoard b) n) [(row-2, col-2), (row-2, col+2)]
+        blackJumps = filter (\n -> canMoveIntoDest (VectorBoard b) n) [(row+2, col-2), (row+2, col+2)]
 
         -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
         whiteZippedPath = zip whiteJumps whiteInbetween
@@ -450,7 +444,6 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
 -- ********************
 -- ***** RUN GAME *****
 -- ********************
--- TODO: fix index out of bounds
 aiNextState :: GameState -> IO GameState
 aiNextState gs = return $ performMoveAI gs
 
