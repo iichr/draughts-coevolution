@@ -322,6 +322,10 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
                 then setSquare boardInbetweenRemoved (kingify fig) dest
                 else setSquare boardInbetweenRemoved fig dest
 
+-- Convert a jump triple in the form of (origin, (destination, inbetween)) 
+-- to (origin, inbetween, destination)
+flattenJump :: (Position, (Position, Position)) -> (Position, Position, Position)
+flattenJump (a,(b,c)) = (a,c,b)
 
 -- ********************************
 -- ***** WIN/END OF GAME **********
@@ -379,10 +383,10 @@ updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
 -- positive for White
 -- negative for Black
 pieceVal :: Square -> Double
-pieceVal (Tile Black Man) = -1.0
-pieceVal (Tile Black King) = -5.0
-pieceVal (Tile White Man) = 1.0
-pieceVal (Tile White King) = 5.0
+pieceVal (Tile Black Man) = 1.0
+pieceVal (Tile Black King) = 5.0
+pieceVal (Tile White Man) = -1.0
+pieceVal (Tile White King) = -5.0
 pieceVal Empty = 0.0
 
 -- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
@@ -403,6 +407,22 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
                 let w = pieceVal square * weight
                 return w
 
+-- Get a tuple of the list of GameState and their respective sums
+getSumforList :: [GameState] -> [(GameState, Double)]
+getSumforList xs = zip xs $ map getSum xs
+-- use map snd getSumforList to obtain the values only
+
+
+-- Given a gamestate get all possible simple moves and jumps emanating from it
+-- either jumps (with precedence) or simple moves at a given time as per the rules of Draughts
+getSuccessiveStates :: GameState -> [GameState]
+getSuccessiveStates gs 
+    | not . null $ availableJumps = map ((\ js -> performJump gs js) . flattenJump) availableJumps
+    | not . null $ availableSimpleMoves  = map (performSimpleMove gs) availableSimpleMoves
+    | otherwise = [gs]
+    where
+        availableJumps = getJumps gs
+        availableSimpleMoves = getSimpleMoves gs
 
 -- ********************
 -- ***** RUN GAME *****
@@ -410,7 +430,7 @@ getSum gs = foldr (+) 0.0 $ getVectortoSum gs
 
 play :: (GameState -> IO GameState) -> (GameState -> IO GameState) -> GameState -> IO ()
 play ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
-    putStrLn ((show gs) ++ "| Board sum " ++  (show boardSum) ++ "\n")
+    putStrLn (show gs ++ "| Board sum " ++  show boardSum ++ "\n" ++ "Next state values |" ++ show _allvals ++ "\n")
     -- play until there is a winner
     case whoWon gs of
         Just player -> putStrLn $ show player ++ " HAS WON."
@@ -420,3 +440,4 @@ play ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
     where
         getNextState = if player1 == Black then ai1 else ai2
         boardSum = getSum gs
+        _allvals = map snd $ getSumforList $ getSuccessiveStates gs

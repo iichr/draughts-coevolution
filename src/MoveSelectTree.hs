@@ -1,8 +1,9 @@
 module MoveSelectTree where
 
 import Boardvector
-import Data.List (minimumBy)
+import Data.List (minimumBy, maximumBy)
 import Data.Ord (comparing)
+import Data.Maybe (isJust)
 
 -- Positive infinity
 posInf :: Fractional a => a
@@ -20,27 +21,7 @@ argMin xs f = minimumBy (comparing f) xs
 -- Return the element of the target list that maximises a function.
 argMax :: (Ord b, Num b) => [a] -> (a -> b) -> a
 argMax xs f = argMin xs (negate . f)
-
-
--- Convert a jump triple in the form of (origin, (destination, inbetween)) 
--- to (origin, inbetween, destination)
-flattenJump :: (Position, (Position, Position)) -> (Position, Position, Position)
-flattenJump (a,(b,c)) = (a,c,b)
-
--- Given a gamestate get all possible simple moves and jumps emanating from it
--- either jumps (with precedence) or simple moves at a given time as per the rules of Draughts
-getSuccessiveStates :: GameState -> [GameState]
-getSuccessiveStates gs 
-    | not . null $ availableJumps = map (\js -> performJump gs js) (map flattenJump availableJumps)
-    | not . null $ availableSimpleMoves  = map (\ms -> performSimpleMove gs ms) availableSimpleMoves
-    | otherwise = [gs]
-    where
-        availableJumps = getJumps gs
-        availableSimpleMoves = getSimpleMoves gs
-
--- Get a tuple of the list of GameState and their respective sums
-getSumforList :: [GameState] -> [(GameState, Double)]
-getSumforList xs = zip xs $ map getSum xs
+--argMax xs f = maximumBy (comparing f) xs
 
 -- Whether the desired depth in the search has been reached
 stopCondition :: Int -> Int -> Bool
@@ -62,7 +43,7 @@ alphabetadepthlim limit evaluator gs@(GameState (VectorBoard b) player1) =
                 | otherwise = 
                     fmin posInf beta (getSuccessiveStates state)
                         where
-                            endOfGame = whoWon state /= Nothing
+                            endOfGame = isJust (whoWon state)
                             fmin val beta [] = val
                             fmin val beta (s:gss) = if val <= alpha then val else fmin newVal (min beta newVal) gss
                                 where
@@ -74,12 +55,15 @@ alphabetadepthlim limit evaluator gs@(GameState (VectorBoard b) player1) =
                 | otherwise = 
                     fmax negInf alpha (getSuccessiveStates state)
                         where
-                            endOfGame = whoWon state /= Nothing
+                            endOfGame = isJust (whoWon state)
                             fmax val alpha [] = val
                             fmax val alpha (s:gss) = if val >= beta then val else fmax newVal (max alpha newVal) gss 
                                 where
                                     newVal = max val (minValue alpha beta (depth+1) s)
 
+
+performMoveAIalphabeta0Ply ::  GameState -> IO GameState
+performMoveAIalphabeta0Ply gs = return $ alphabetadepthlim 0 getSum gs
 
 performMoveAIalphabeta3Ply ::  GameState -> IO GameState
 performMoveAIalphabeta3Ply gs = return $ alphabetadepthlim 3 getSum gs

@@ -12,4 +12,4 @@ main = do
     hSetBuffering stdout NoBuffering
     -- using random moves
     -- play aiNextState aiNextState (GameState initialBoard White)
-    play aiNextState aiNextState (GameState initialBoard White)
+    play performMoveAIalphabeta0Ply performMoveAIalphabeta6Ply (GameState initialBoard Black)
