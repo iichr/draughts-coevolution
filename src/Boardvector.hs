@@ -8,6 +8,8 @@ import Control.Monad
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
 -- import qualified Data.Vector.Unboxed.Mutable as MUV
+import System.Random
+import Evolution
 
 -- DATA TYPES
 
@@ -143,25 +145,33 @@ jump (VectorBoard b) orig@(row, col)
         |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- whiteZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween,
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing]
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing],
+                                let y = getSquare (VectorBoard b) dest,
+                                elem y [Just Empty]
                                 ]
 
         |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- blackZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing]
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing],
+                                let y = getSquare (VectorBoard b) dest,
+                                elem y [Just Empty]
                                 ]
                                                                                                         
         |Just (Tile White King) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing]
+                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing],
+                                let y = getSquare (VectorBoard b) dest,
+                                elem y [Just Empty]
                                 ]
 
         |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing]
+                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing],
+                                let y = getSquare (VectorBoard b) dest,
+                                elem y [Just Empty]
                                 ]
                                                
         |otherwise = []
@@ -171,8 +181,9 @@ jump (VectorBoard b) orig@(row, col)
         whiteInbetween = [(row-1, col-1), (row-1, col+1)]
         blackInbetween = [(row+1, col-1), (row+1, col+1)]
     
-        whiteJumps = filter (\n -> canMoveIntoDest (VectorBoard b) n) [(row-2, col-2), (row-2, col+2)]
-        blackJumps = filter (\n -> canMoveIntoDest (VectorBoard b) n) [(row+2, col-2), (row+2, col+2)]
+        -- OLD SOLUTION: filter (\n -> canMoveIntoDest (VectorBoard b) n)
+        whiteJumps = [(row-2, col-2), (row-2, col+2)]
+        blackJumps = [(row+2, col-2), (row+2, col+2)]
 
         -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
         whiteZippedPath = zip whiteJumps whiteInbetween
@@ -368,6 +379,16 @@ makeWeightinit :: UV.Vector Weight
 --     MUV.replicate 64 (1.0 :: Double)
 makeWeightinit = UV.replicate 64 (1.0 :: Double)
 
+-- !NEW
+makeWeightinitNEW :: IO (UV.Vector Weight)
+makeWeightinitNEW = UV.replicateM 64 $ randomRIO (0.1 :: Double, 1.0 :: Double)
+
+-- !NEW
+makeWeightPopulationNEW :: V.Vector (IO (UV.Vector Weight))
+makeWeightPopulationNEW = V.concat[V.replicate 100 makeWeightinitNEW]
+-- display: sequence $ makeWeightPopulationNEW V.!? 47
+
+
 -- Update a weight vector as a result of a run
 -- Use mutability to increase efficiency as frequent changes will be made
 -- TODO: implement
@@ -389,28 +410,6 @@ pieceVal (Tile White Man) = -1.0
 pieceVal (Tile White King) = -5.0
 pieceVal Empty = 0.0
 
--- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
--- from the weights vector; a positive result: Player White has an advantage, Black does not, 
--- and vice versa for a negative result
-getSum :: GameState -> Double
-getSum gs = foldr (+) 0.0 $ getVectortoSum gs 
-        where    
-            getVectortoSum :: GameState -> [Double]
-            getVectortoSum gs@(GameState (VectorBoard b) _) = do
-                row <- [0..7]
-                col <- [0..7]
-                let pos = (row, col)
-                let square = fromJust $ getSquare (VectorBoard b) pos
-                let i = convertPos2Index pos
-                let weightsvector = makeWeightinit
-                let weight = weightsvector UV.! i
-                let w = pieceVal square * weight
-                return w
-
--- Get a tuple of the list of GameState and their respective sums
-getSumforList :: [GameState] -> [(GameState, Double)]
-getSumforList xs = zip xs $ map getSum xs
--- use map snd getSumforList to obtain the values only
 
 
 -- Given a gamestate get all possible simple moves and jumps emanating from it
@@ -428,16 +427,103 @@ getSuccessiveStates gs
 -- ***** RUN GAME *****
 -- ********************
 
-play :: (GameState -> IO GameState) -> (GameState -> IO GameState) -> GameState -> IO ()
-play ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
-    putStrLn (show gs ++ "| Board sum " ++  show boardSum ++ "\n" ++ "Next state values |" ++ show _allvals ++ "\n")
+play :: Enum a => Genome a -> Genome a -> (Genome a -> GameState -> IO GameState) -> (Genome a -> GameState -> IO GameState) -> GameState -> IO ()
+play gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
+    putStrLn (show gs ++ "\n")
+    -- "| Board sum " ++  show boardSum ++ "\n" )
+    -- ++ "Next state values |" ++ show _allvals ++ "\n")
     -- play until there is a winner
     case whoWon gs of
         Just player -> putStrLn $ show player ++ " HAS WON."
         Nothing -> do
             nextstate <- getNextState gs
-            play ai1 ai2 nextstate
+            -- nextstate is now of this type (Genome a -> GameState -> IO GameState)
+            -- we need it to be just IO GameState
+            play gen1 gen2 ai1 ai2 nextstate
     where
-        getNextState = if player1 == Black then ai1 else ai2
-        boardSum = getSum gs
-        _allvals = map snd $ getSumforList $ getSuccessiveStates gs
+        getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
+        --boardSum = getSum gs
+        -- _allvals = map snd $ getSumforList $ getSuccessiveStates gs
+
+
+
+-- ********************
+-- ***** EVOLUTION *****
+-- ********************
+
+-- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
+-- from the weights vector; a positive result: Player White has an advantage, Black does not, 
+-- and vice versa for a negative result
+getSum :: Genome Double -> GameState -> Double
+getSum genome gs= foldr (+) 0.0 $ getVectortoSum gs genome
+        where    
+            getVectortoSum :: GameState -> Genome Double -> [Double]
+            getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
+                row <- [0..7]
+                col <- [0..7]
+                let pos = (row, col)
+                let square = fromJust $ getSquare (VectorBoard b) pos
+                let i = convertPos2Index pos
+                --let weightsvector = makeWeightinit
+                let weight = genome !! i
+                let w = pieceVal square * weight
+                return w
+
+          
+-- Get a tuple of the list of GameState and their respective sums
+getSumforList :: [GameState] -> Genome Double -> [(GameState, Double)]
+getSumforList xs genome = zip xs $ map (\x -> getSum genome x) xs
+-- use map snd getSumforList to obtain the values only
+
+
+        -- ********************
+-- ***** FOR TESTING PURPOSES- BORROWED FROM BOARDVECTORSPEC *****
+-- ********************
+generateRow :: [Int] -> Square -> V.Vector Square
+generateRow ys sq = V.replicate 8 Empty V.// (\x -> [(z,sq) | z <- x]) ys
+
+changeRow :: V.Vector Square -> [Int] -> Square -> V.Vector Square
+changeRow vect ys sq = vect V.// (\x -> [(z,sq) | z <- x]) ys
+
+fullRow :: [Int] -> Square -> [Int] -> Square -> V.Vector Square
+fullRow xs s1 ys x2 = changeRow (generateRow xs s1) ys x2
+
+badBoard :: VectorBoard
+-- white's turn
+badBoard = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, r7] where
+    b = Tile Black Man
+    w = Tile White Man
+    --bk = Tile Black King
+    --wk = Tile White King
+    --empty = V.replicate 8 Empty
+    r0 = generateRow [1,3,5,7] b
+    r1 = generateRow [0,2,4,6] b
+    r2 = generateRow [1,3,7] b
+    r3 = generateRow [6] b
+    r4 = generateRow [5] w
+    r5 = generateRow [0,2,6] w
+    r6 = generateRow [1,3,5,7] w
+    r7 =  generateRow [0,2,4,6] w
+
+    --getJumps (GameState badBoard White)
+    -- [((4,5),((2,7),(3,6)))] is WRONG
+
+badBoard2 :: VectorBoard
+-- black's turn
+badBoard2 = VectorBoard $ V.fromList [r0, r1, empty, r3, r4, r5, r6, r7] where
+    b = Tile Black Man
+    w = Tile White Man
+    empty = V.replicate 8 Empty
+
+    r0 = generateRow [1,5,7] b
+    r1 = generateRow [0,2,4,6] b
+    --r2 = empty
+    r3 = generateRow [0,2] b
+    r4 = generateRow [5] b
+    r5 = generateRow [0,4,6] w
+    r6 = fullRow [1,3] w [5] b
+    r7 =  generateRow [0,2,6] w
+
+    --getJumps (GameState badBoard2 Black)
+    --[((4,5),((6,7),(5,4)))] is wrong
+    -- inbetween is wrong!!! FIXED. Issue was filtering

@@ -4,6 +4,7 @@ import Boardvector
 import Data.List (minimumBy, maximumBy)
 import Data.Ord (comparing)
 import Data.Maybe (isJust)
+import Evolution
 
 -- Positive infinity
 posInf :: Fractional a => a
@@ -31,15 +32,15 @@ stopCondition depth limit = depth == limit
 -- Adapted from pseudocode in Stuart Russell, Peter Norvig - Artificial Intelligence - A Modern Approach 3rd Ed
 -- Chapter 5, pp. 170 - 175
 -- initial depth set to 0
-alphabetadepthlim :: Int -> (GameState -> Double) -> GameState -> GameState
-alphabetadepthlim limit evaluator gs@(GameState (VectorBoard b) player1) = 
+alphabetadepthlim :: Int -> Genome Double -> (Genome Double -> GameState -> Double) -> GameState -> GameState
+alphabetadepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) = 
     argMax allsuccessive (minValue negInf posInf 0)
         where
             allsuccessive = getSuccessiveStates gs
 
             minValue alpha beta depth state
-                | endOfGame = evaluator state
-                | stopCondition depth limit = evaluator state
+                | endOfGame = evaluator genome state
+                | stopCondition depth limit = evaluator genome state
                 | otherwise = 
                     fmin posInf beta (getSuccessiveStates state)
                         where
@@ -50,8 +51,8 @@ alphabetadepthlim limit evaluator gs@(GameState (VectorBoard b) player1) =
                                     newVal = min val (maxValue alpha beta (depth+1) s)
             
             maxValue alpha beta depth state
-                | endOfGame = evaluator state
-                | stopCondition depth limit = evaluator state
+                | endOfGame = evaluator genome state
+                | stopCondition depth limit = evaluator genome state
                 | otherwise = 
                     fmax negInf alpha (getSuccessiveStates state)
                         where
@@ -62,14 +63,14 @@ alphabetadepthlim limit evaluator gs@(GameState (VectorBoard b) player1) =
                                     newVal = max val (minValue alpha beta (depth+1) s)
 
 
-performMoveAIalphabeta0Ply ::  GameState -> IO GameState
-performMoveAIalphabeta0Ply gs = return $ alphabetadepthlim 0 getSum gs
+performMoveAIalphabeta0Ply :: Genome Double -> GameState -> IO GameState
+performMoveAIalphabeta0Ply genome gs = return $ alphabetadepthlim 0 genome getSum gs
 
-performMoveAIalphabeta3Ply ::  GameState -> IO GameState
-performMoveAIalphabeta3Ply gs = return $ alphabetadepthlim 3 getSum gs
+performMoveAIalphabeta3Ply :: Genome Double -> GameState -> IO GameState
+performMoveAIalphabeta3Ply genome gs = return $ alphabetadepthlim 3 genome getSum gs
 
-performMoveAIalphabeta5Ply ::  GameState -> IO GameState
-performMoveAIalphabeta5Ply gs = return $ alphabetadepthlim 5 getSum gs
+performMoveAIalphabeta5Ply :: Genome Double ->  GameState -> IO GameState
+performMoveAIalphabeta5Ply genome gs = return $ alphabetadepthlim 5 genome getSum gs
 
-performMoveAIalphabeta6Ply ::  GameState -> IO GameState
-performMoveAIalphabeta6Ply gs = return $ alphabetadepthlim 6 getSum gs
+performMoveAIalphabeta6Ply :: Genome Double ->  GameState -> IO GameState
+performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSum gs 
