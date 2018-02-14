@@ -488,9 +488,10 @@ playnonIO counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1)
         where
             getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
 
-        -- ********************
+-- ********************
 -- ***** FOR TESTING PURPOSES- BORROWED FROM BOARDVECTORSPEC *****
 -- ********************
+
 generateRow :: [Int] -> Square -> V.Vector Square
 generateRow ys sq = V.replicate 8 Empty V.// (\x -> [(z,sq) | z <- x]) ys
 

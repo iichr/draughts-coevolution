@@ -86,8 +86,8 @@ performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSu
 performMoveAIalphabeta0PlyNonIO :: Genome Double -> GameState -> GameState
 performMoveAIalphabeta0PlyNonIO genome gs = alphabetadepthlim 0 genome getSum gs
 
-performMoveAIalphabeta3PlyNonIO :: Genome Double -> GameState -> GameState
-performMoveAIalphabeta3PlyNonIO genome gs = alphabetadepthlim 3 genome getSum gs
+performMoveAIalphabeta4PlyNonIO :: Genome Double -> GameState -> GameState
+performMoveAIalphabeta4PlyNonIO genome gs = alphabetadepthlim 4 genome getSum gs
 
 performMoveAIalphabeta5PlyNonIO :: Genome Double ->  GameState -> GameState
 performMoveAIalphabeta5PlyNonIO genome gs = alphabetadepthlim 5 genome getSum gs
