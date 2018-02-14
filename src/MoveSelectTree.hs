@@ -63,6 +63,10 @@ alphabetadepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) 
                                     newVal = max val (minValue alpha beta (depth+1) s)
 
 
+-- ******************************************
+-- * IO PLAYERS, use with PLAY function *****
+-- ******************************************
+
 performMoveAIalphabeta0Ply :: Genome Double -> GameState -> IO GameState
 performMoveAIalphabeta0Ply genome gs = return $ alphabetadepthlim 0 genome getSum gs
 
@@ -74,3 +78,19 @@ performMoveAIalphabeta5Ply genome gs = return $ alphabetadepthlim 5 genome getSu
 
 performMoveAIalphabeta6Ply :: Genome Double ->  GameState -> IO GameState
 performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSum gs 
+
+-- ***************************************************
+-- * NON-IO PLAYERS, use with PLAYNONIO function *****
+-- ***************************************************
+
+performMoveAIalphabeta0PlyNonIO :: Genome Double -> GameState -> GameState
+performMoveAIalphabeta0PlyNonIO genome gs = alphabetadepthlim 0 genome getSum gs
+
+performMoveAIalphabeta3PlyNonIO :: Genome Double -> GameState -> GameState
+performMoveAIalphabeta3PlyNonIO genome gs = alphabetadepthlim 3 genome getSum gs
+
+performMoveAIalphabeta5PlyNonIO :: Genome Double ->  GameState -> GameState
+performMoveAIalphabeta5PlyNonIO genome gs = alphabetadepthlim 5 genome getSum gs
+
+performMoveAIalphabeta6PlyNonIO :: Genome Double ->  GameState -> GameState
+performMoveAIalphabeta6PlyNonIO genome gs = alphabetadepthlim 6 genome getSum gs 

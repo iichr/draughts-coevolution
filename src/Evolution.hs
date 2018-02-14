@@ -73,7 +73,6 @@ mutate p genome = do
         else
             return genome
 
-
 -- TODO selection - tournament - pick 2, compare them
 
 -- TODO evaluation
@@ -87,7 +86,3 @@ mutate p genome = do
 -- play one individual against a fixed 100 opponents from above
 -- record total number of wins
 -- needs to produce a Double
-
-
-
-

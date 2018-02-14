@@ -423,13 +423,13 @@ getSuccessiveStates gs
         availableJumps = getJumps gs
         availableSimpleMoves = getSimpleMoves gs
 
--- ********************
--- ***** RUN GAME *****
--- ********************
+-- ***********************
+-- ***** RUN GAME IO *****
+-- ***********************
 
-play :: Enum a => Genome a -> Genome a -> (Genome a -> GameState -> IO GameState) -> (Genome a -> GameState -> IO GameState) -> GameState -> IO ()
-play gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
-    putStrLn (show gs ++ "\n")
+play :: Enum a => Int -> Genome a -> Genome a -> (Genome a -> GameState -> IO GameState) -> (Genome a -> GameState -> IO GameState) -> GameState -> IO ()
+play counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
+    putStrLn (show gs ++ "| moves left " ++ show counter ++ "\n" )
     -- "| Board sum " ++  show boardSum ++ "\n" )
     -- ++ "Next state values |" ++ show _allvals ++ "\n")
     -- play until there is a winner
@@ -437,15 +437,14 @@ play gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
         Just player -> putStrLn $ show player ++ " HAS WON."
         Nothing -> do
             nextstate <- getNextState gs
-            -- nextstate is now of this type (Genome a -> GameState -> IO GameState)
-            -- we need it to be just IO GameState
-            play gen1 gen2 ai1 ai2 nextstate
+            if (counter == 0)
+                then putStrLn $ "it's a draw"
+                else (play (counter-1) gen1 gen2 ai1 ai2 nextstate)
     where
         getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
         --boardSum = getSum gs
         -- _allvals = map snd $ getSumforList $ getSuccessiveStates gs
-
-
+    
 
 -- ********************
 -- ***** EVOLUTION *****
@@ -475,6 +474,19 @@ getSumforList :: [GameState] -> Genome Double -> [(GameState, Double)]
 getSumforList xs genome = zip xs $ map (\x -> getSum genome x) xs
 -- use map snd getSumforList to obtain the values only
 
+-- ***************************
+-- ***** RUN GAME NON IO *****
+-- ***************************
+
+playnonIO :: Enum a => Int -> Genome a -> Genome a -> (Genome a -> GameState -> GameState) -> (Genome a -> GameState -> GameState) -> GameState -> Int
+playnonIO counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1)
+        | whoWon gs == Just Black = 1
+        | whoWon gs == Just White = -1
+        | otherwise = if (counter == 0)
+                        then 0
+                        else playnonIO (counter-1) gen1 gen2 ai1 ai2 (getNextState gs)
+        where
+            getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
 
         -- ********************
 -- ***** FOR TESTING PURPOSES- BORROWED FROM BOARDVECTORSPEC *****
