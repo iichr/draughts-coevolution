@@ -23,7 +23,7 @@ testt = do
 
 type Genome a = [a]
 
-type FitnessFun a = Genome a -> [Genome a] -> Double
+-- type FitnessFun a = Genome a -> Int
 
 type SelectionFun a = [(Genome a, Double)] -> Rand PureMT [Genome a]
 
@@ -40,13 +40,19 @@ randomGenomes len genomeLen from to = do
           nLists n ls = take n ls : nLists n (drop n ls)
 
 test = do
+    -- evalRand returns value ONLY
+    -- runRand return value AND generator in a tuple (v,g)
     g <- newPureMT 
-    let (p,g') = runRand (randomGenomes 2 5 (0.1::Double) (1.0::Double) ) g
+    let p = evalRand (randomGenomes 3 5 (0.1::Double) (1.0::Double) ) g
+    -- crossover function test
     let z = evalRand (uniformCrossover 0.75 (head p,[4,5,6])) g
+    -- mutations test
     let k = evalRand (mutate 0.75 [1,2,3,4]) g
-    -- return $ head p
+    -- do batch crossovers test
+    let y = evalRand (doCrossovers p (uniformCrossover 0.75)) g
     --return z
-    return k
+    print p
+    return y
 
 
 uniformCrossover :: Double -> Crossover Double
@@ -86,3 +92,12 @@ mutate p genome = do
 -- play one individual against a fixed 100 opponents from above
 -- record total number of wins
 -- needs to produce a Double
+
+doCrossovers :: [Genome Double] -> Crossover Double -> Rand PureMT [Genome Double]
+doCrossovers [] _ = return []
+-- return nothing if only a single genome
+doCrossovers [_] _ = return []
+doCrossovers (g1:g2:gs) crossoverFun = do
+    (g1new, g2new) <- crossoverFun (g1, g2)
+    gsnew <- doCrossovers gs crossoverFun
+    return $ g1new:g2new:gsnew
