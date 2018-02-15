@@ -43,16 +43,24 @@ test = do
     -- evalRand returns value ONLY
     -- runRand return value AND generator in a tuple (v,g)
     g <- newPureMT 
-    let p = evalRand (randomGenomes 3 5 (0.1::Double) (1.0::Double) ) g
+    let p = evalRand (randomGenomes 10 1 (0.1::Double) (1.0::Double) ) g
     -- crossover function test
     let z = evalRand (uniformCrossover 0.75 (head p,[4,5,6])) g
     -- mutations test
     let k = evalRand (mutate 0.75 [1,2,3,4]) g
     -- do batch crossovers test
     let y = evalRand (doCrossovers p (uniformCrossover 0.75)) g
-    --return z
+    -- selection
+    let samplePopFitnessTuples = zip p [0,4,3,7,8,9,1,5,6,3]
+    let sel = evalRand (selectionTournament samplePopFitnessTuples 2) g
+    print "Population"
     print p
-    return y
+    print "Population,Fitness tuples"
+    -- mapM for neat and tidy printing one by one
+    mapM_ print samplePopFitnessTuples
+    --print y
+    print "Tournament selection"
+    mapM_ print sel
 
 
 uniformCrossover :: Double -> Crossover Double
@@ -79,19 +87,11 @@ mutate p genome = do
         else
             return genome
 
--- TODO selection - tournament - pick 2, compare them
-
--- TODO evaluation
 -- TODO gather statistics
 -- TODO consider replacing lists with Unboxed Vector - O(1) access worth it? 
 
 -- Generate 100 random strategies y1-y100
 -- hundredGenomes = randomGenomes 100 64 (0.1::Double) (1.0::Double)
-
--- fitness
--- play one individual against a fixed 100 opponents from above
--- record total number of wins
--- needs to produce a Double
 
 doCrossovers :: [Genome Double] -> Crossover Double -> Rand PureMT [Genome Double]
 doCrossovers [] _ = return []
@@ -101,3 +101,28 @@ doCrossovers (g1:g2:gs) crossoverFun = do
     (g1new, g2new) <- crossoverFun (g1, g2)
     gsnew <- doCrossovers gs crossoverFun
     return $ g1new:g2new:gsnew
+
+
+-- tournament selection
+-- pick two individuals uniformly at random
+-- choose the one with highest fitness
+-- do TWO times for two parents
+-- * population and number of times to compete as inputs
+selectionTournament :: [(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)
+selectionTournament pop k = selectionLoop pop ([],0) k 
+    where
+        selectionLoop :: [(Genome Double, Int)] -> (Genome Double, Int) -> Int -> Rand PureMT (Genome Double)
+        selectionLoop pop chosen k
+            | k > 0 = do
+                i <- getRandomR (0, (length pop)-1)
+                let ind = pop !! i
+                -- ! DUPLICATES DISCARDED - effect on evolution?
+                if snd ind <= snd chosen
+                    -- keep previously chosen genome and carry on
+                    then selectionLoop pop chosen (k-1)
+                    -- else replace current best with with the new individual
+                    else selectionLoop pop ind (k-1)
+            | otherwise = return $ fst chosen
+
+
+
