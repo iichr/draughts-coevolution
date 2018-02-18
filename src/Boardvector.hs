@@ -405,9 +405,9 @@ updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
 -- negative for Black
 pieceVal :: Square -> Double
 pieceVal (Tile Black Man) = 1.0
-pieceVal (Tile Black King) = 5.0
+pieceVal (Tile Black King) = 2.0
 pieceVal (Tile White Man) = -1.0
-pieceVal (Tile White King) = -5.0
+pieceVal (Tile White King) = -2.0
 pieceVal Empty = 0.0
 
 

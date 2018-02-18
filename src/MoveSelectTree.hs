@@ -63,6 +63,28 @@ alphabetadepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) 
                                     newVal = max val (minValue alpha beta (depth+1) s)
 
 
+minimaxdepthlim :: Int -> Genome Double -> (Genome Double -> GameState -> Double) -> GameState -> GameState
+minimaxdepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) = 
+    argMax succs (minValue 0)
+    where
+        succs  = getSuccessiveStates gs
+        
+        minValue depth state
+            | endOfGame = evaluator genome state
+            | stopCondition depth limit = evaluator genome state
+            | otherwise =
+                minimum [ maxValue (1+depth) s | s <- getSuccessiveStates state ]
+                where
+                    endOfGame = isJust (whoWon state)
+
+        maxValue depth state
+            | endOfGame = evaluator genome state
+            | stopCondition depth limit = evaluator genome state
+            | otherwise = 
+                maximum [ minValue (1+depth) s | s <- getSuccessiveStates state ]
+                where
+                    endOfGame = isJust (whoWon state)
+
 -- ******************************************
 -- * IO PLAYERS, use with PLAY function *****
 -- ******************************************
@@ -73,11 +95,25 @@ performMoveAIalphabeta0Ply genome gs = return $ alphabetadepthlim 0 genome getSu
 performMoveAIalphabeta3Ply :: Genome Double -> GameState -> IO GameState
 performMoveAIalphabeta3Ply genome gs = return $ alphabetadepthlim 3 genome getSum gs
 
+performMoveAIalphabeta4Ply :: Genome Double ->  GameState -> IO GameState
+performMoveAIalphabeta4Ply genome gs = return $ alphabetadepthlim 4 genome getSum gs
+
 performMoveAIalphabeta5Ply :: Genome Double ->  GameState -> IO GameState
 performMoveAIalphabeta5Ply genome gs = return $ alphabetadepthlim 5 genome getSum gs
 
 performMoveAIalphabeta6Ply :: Genome Double ->  GameState -> IO GameState
 performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSum gs 
+
+-- ******************************************
+-- * MINIMAX IO PLAYERS, use with PLAY function *****
+-- ******************************************
+
+performMoveMinimax3Ply :: Genome Double -> GameState -> IO GameState
+performMoveMinimax3Ply genome gs = return $ minimaxdepthlim 3 genome getSum gs
+
+performMoveMinimax4Ply :: Genome Double ->  GameState -> IO GameState
+performMoveMinimax4Ply genome gs = return $ minimaxdepthlim 4 genome getSum gs
+
 
 -- ***************************************************
 -- * NON-IO PLAYERS, use with PLAYNONIO function *****
@@ -85,6 +121,9 @@ performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSu
 
 performMoveAIalphabeta0PlyNonIO :: Genome Double -> GameState -> GameState
 performMoveAIalphabeta0PlyNonIO genome gs = alphabetadepthlim 0 genome getSum gs
+
+performMoveAIalphabeta3PlyNonIO :: Genome Double -> GameState -> GameState
+performMoveAIalphabeta3PlyNonIO genome gs = alphabetadepthlim 3 genome getSum gs
 
 performMoveAIalphabeta4PlyNonIO :: Genome Double -> GameState -> GameState
 performMoveAIalphabeta4PlyNonIO genome gs = alphabetadepthlim 4 genome getSum gs
