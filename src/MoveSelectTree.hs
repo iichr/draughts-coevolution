@@ -6,6 +6,9 @@ import Data.Ord (comparing)
 import Data.Maybe (isJust)
 import Evolution
 
+import Control.Monad.Random
+import System.Random.Mersenne.Pure64
+
 -- Positive infinity
 posInf :: Fractional a => a
 posInf = 1/0
@@ -24,11 +27,71 @@ argMax :: (Ord b, Num b) => [a] -> (a -> b) -> a
 argMax xs f = argMin xs (negate . f)
 --argMax xs f = maximumBy (comparing f) xs
 
+-- argMin' :: Ord b => Rand PureMT [a] -> (a -> b) -> Rand PureMT a
+-- argMin' xs f = do
+--     ys <- xs
+--     return $ minimumBy (comparing f) ys
+
 -- Whether the desired depth in the search has been reached
 stopCondition :: Int -> Int -> Bool
 stopCondition depth limit = depth == limit
 
--- Depth-limited alpha beta search using an evaluation function 
+-- *********************************************
+-- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
+-- ! ***********  WITH RANDOMNESS   ************
+-- *********************************************
+
+minValue' :: (Fractional a, Ord a) => a -> a -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> a) -> a
+minValue' alpha beta depth limit state genome evaluator =
+    if endOfGame || stopCondition depth limit
+        then evaluator genome state
+    else 
+        fmin posInf beta (getSuccessiveStates state)
+    where
+        endOfGame = isJust (whoWon state)
+        fmin val beta [] = val
+        fmin val beta (s:gss) = if val <= alpha then val else fmin newVal (min beta newVal) gss
+            where
+                newVal = min val (maxValue' alpha beta (depth+1) limit s genome evaluator)
+
+
+maxValue' :: (Fractional a, Ord a) => a -> a -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> a) -> a
+maxValue' alpha beta depth limit state genome evaluator =
+    if endOfGame || stopCondition depth limit
+        then evaluator genome state
+    else 
+        fmax negInf alpha (getSuccessiveStates state)
+    where
+        endOfGame = isJust (whoWon state)
+        fmax val alpha [] = val
+        fmax val alpha (s:gss) = if val >= beta then val else fmax newVal (max alpha newVal) gss 
+            where
+                newVal = max val (minValue' alpha beta (depth+1) limit s genome evaluator)
+
+
+
+-- *********************************************
+-- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
+-- *********************************************            
+
+alphabetadepthlim' :: Double -> Double -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> Double) -> Rand PureMT GameState
+alphabetadepthlim' alpha beta depth limit state genome evaluator = do
+    -- join in place of concat
+    -- apply minValue' recursively to all elements of the list of successive states
+    -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
+    -- zip evaluation and state together
+    let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.25)::Double,(0.25))
+    let res = zipWith (+) allStatesEvaluated l
+    --let b = map ((,) r) (getSuccessiveStates state)
+    let tupleEvalState = zip res (getSuccessiveStates state)
+    -- up to here the return type is Rand PureMT [(Double, GameState)]
+    let b = maximumBy (comparing fst) tupleEvalState
+    -- up to here the return type is Rand PureMT (Double, GameState)
+    return $ snd b
+   
+    
+-- Depth-limited alpha beta search using an evaluation function
 -- Adapted from pseudocode in Stuart Russell, Peter Norvig - Artificial Intelligence - A Modern Approach 3rd Ed
 -- Chapter 5, pp. 170 - 175
 -- initial depth set to 0
@@ -113,7 +176,6 @@ performMoveMinimax3Ply genome gs = return $ minimaxdepthlim 3 genome getSum gs
 
 performMoveMinimax4Ply :: Genome Double ->  GameState -> IO GameState
 performMoveMinimax4Ply genome gs = return $ minimaxdepthlim 4 genome getSum gs
-
 
 -- ***************************************************
 -- * NON-IO PLAYERS, use with PLAYNONIO function *****
