@@ -11,6 +11,9 @@ import qualified Data.Vector.Unboxed as UV
 import System.Random
 import Evolution
 
+import Control.Monad.Random
+import System.Random.Mersenne.Pure64
+
 -- DATA TYPES
 
 data Player = Black | White
@@ -310,7 +313,7 @@ performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) 
 -- Players will be predetermined and will only have access to the list of available moves to choose from
 -- hence a second check for move validity is redundant
 performJump :: GameState -> (Position, Position, Position) -> GameState
-performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest) = GameState newBoardJumped player2
+performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest) = gameState
     where
         player2 = oppositeOf player1
         -- get the figure at the original position
@@ -332,6 +335,15 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
                 -- add promoted to the destination position
                 then setSquare boardInbetweenRemoved (kingify fig) dest
                 else setSquare boardInbetweenRemoved fig dest
+
+        -- IF ANY MORE AVAILABLE JUMPS FROM THIS POSITION ARE AVAIILABLE
+        -- unless the element was kinged (as per the rules)
+        -- jump outputs 
+        multipleJumps = jump newBoardJumped dest
+        gameState
+            | (not $ null $ multipleJumps) && not promotion = GameState newBoardJumped player1
+            | otherwise = GameState newBoardJumped player2
+
 
 -- Convert a jump triple in the form of (origin, (destination, inbetween)) 
 -- to (origin, inbetween, destination)
@@ -405,9 +417,9 @@ updateWeightMutably oldWeight gs@(GameState (VectorBoard b) player1) = undefined
 -- negative for Black
 pieceVal :: Square -> Double
 pieceVal (Tile Black Man) = 1.0
-pieceVal (Tile Black King) = 2.0
+pieceVal (Tile Black King) = 1.3
 pieceVal (Tile White Man) = -1.0
-pieceVal (Tile White King) = -2.0
+pieceVal (Tile White King) = -1.3
 pieceVal Empty = 0.0
 
 
@@ -450,12 +462,25 @@ play counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1) = do
 -- ***** EVOLUTION *****
 -- ********************
 
+getSum' :: Genome Double -> GameState -> Rand PureMT Double
+getSum' g gs = do
+    t <- getRandomR((-0.25)::Double, 0.25)
+    let balance = t
+    return $ (getSum g gs) + balance
+
 -- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
 -- from the weights vector; a positive result: Player White has an advantage, Black does not, 
 -- and vice versa for a negative result
 getSum :: Genome Double -> GameState -> Double
-getSum genome gs= foldr (+) 0.0 $ getVectortoSum gs genome
-        where    
+getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome) +
+                   1.2 * (fromIntegral jumpscount) + 0.7 * (fromIntegral simplemovescount)
+--                   + (foldr (+) 0.0 $ getVectortoSumEdges gs genome)
+
+        where 
+            jumpscount = length $ getJumps gs
+            simplemovescount = length $ getSimpleMoves gs
+            
+            
             getVectortoSum :: GameState -> Genome Double -> [Double]
             getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
                 row <- [0..7]
@@ -465,13 +490,25 @@ getSum genome gs= foldr (+) 0.0 $ getVectortoSum gs genome
                 let i = convertPos2Index pos
                 --let weightsvector = makeWeightinit
                 let weight = genome !! i
-                let w = pieceVal square * weight
+                let w = (pieceVal square) * 1.7 * weight
                 return w
+
+            -- getVectortoSumEdges :: GameState -> Genome Double -> [Double]
+            -- getVectortoSumEdges gs@(GameState (VectorBoard b) _) genome = do
+            --     row <- [1,6]
+            --     col <- [0..7]
+            --     let pos = (row, col)
+            --     let square = fromJust $ getSquare (VectorBoard b) pos
+            --     let i = convertPos2Index pos
+            --     --let weightsvector = makeWeightinit
+            --     let weight = genome !! i
+            --     let w = (pieceVal square) * 0.7 * weight
+            --     return w
 
           
 -- Get a tuple of the list of GameState and their respective sums
-getSumforList :: [GameState] -> Genome Double -> [(GameState, Double)]
-getSumforList xs genome = zip xs $ map (\x -> getSum genome x) xs
+-- getSumforList :: [GameState] -> Genome Double -> [(GameState, Double)]
+-- getSumforList xs genome = zip xs $ map (\x -> getSum genome x) xs
 -- use map snd getSumforList to obtain the values only
 
 -- ***************************
