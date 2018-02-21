@@ -68,11 +68,7 @@ maxValue' alpha beta depth limit state genome evaluator =
             where
                 newVal = max val (minValue' alpha beta (depth+1) limit s genome evaluator)
 
-
-
--- *********************************************
--- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
--- *********************************************            
+          
 
 alphabetadepthlim' :: Double -> Double -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> Double) -> Rand PureMT GameState
 alphabetadepthlim' alpha beta depth limit state genome evaluator = do
@@ -91,6 +87,10 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     return $ snd b
    
     
+-- *********************************************
+-- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
+-- *********************************************  
+
 -- Depth-limited alpha beta search using an evaluation function
 -- Adapted from pseudocode in Stuart Russell, Peter Norvig - Artificial Intelligence - A Modern Approach 3rd Ed
 -- Chapter 5, pp. 170 - 175

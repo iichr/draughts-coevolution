@@ -525,6 +525,44 @@ playnonIO counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1)
         where
             getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
 
+
+playnonIOMonadicSecond :: Enum a => Int -> Genome a -> Genome a -> (Genome a -> GameState ->  Rand PureMT GameState) -> (Genome a -> GameState ->  Rand PureMT GameState) -> Rand PureMT GameState -> Rand PureMT Int
+playnonIOMonadicSecond counter gen1 gen2 ai1 ai2 ms = do
+            gs <- ms
+            playnonIO' counter gen1 gen2 ai1 ai2 gs
+
+            -- check gs
+            -- where
+            --     check gs@(GameState (VectorBoard b) player1)
+            --         | whoWon gs == Just Black = getRandomR(1,1)
+            --         | whoWon gs == Just White = getRandomR(-1,-1)
+            --         | otherwise = if (counter == 0)
+            --             then getRandomR(0,0)
+            --             else playnonIOMonadicSecond (counter-1) gen1 gen2 ai1 ai2 (getNextState gs)
+            --                 where
+            --                     getNextState gs = if 
+            --                         player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
+
+
+playnonIO' :: Enum a => Int -> Genome a -> Genome a -> (Genome a -> GameState ->  Rand PureMT GameState) -> (Genome a -> GameState ->  Rand PureMT GameState) -> GameState -> Rand PureMT Int
+playnonIO' counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1)
+        | whoWon gs == Just Black = getRandomR(1,1)
+        | whoWon gs == Just White = getRandomR(-1,-1)
+        | otherwise = if (counter == 0)
+                        then getRandomR(0,0)
+                        else playnonIOMonadicSecond (counter-1) gen1 gen2 ai1 ai2 (getNextState gs)
+        where
+            getNextState gs = if player1 == Black then (ai1 gen1 gs) else (ai2 gen2 gs)
+            -- each statement in the brackets produces a Rand PureMT GameState as opposed to just a non-monadic one
+            -- getNextState gs = do
+            --     if player1 == Black 
+            --         then do
+            --             k <- (ai1 gen1 gs) 
+            --             return k
+            --         else do
+            --             z <- (ai2 gen2 gs)
+            --             return z
+
 -- ********************
 -- ***** FOR TESTING PURPOSES- BORROWED FROM BOARDVECTORSPEC *****
 -- ********************
