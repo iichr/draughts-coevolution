@@ -26,18 +26,19 @@ coin = getRandomR (0,1)
 evaluate :: Genome Double -> Genome Double -> Rand PureMT Int
 evaluate genome op = do
     toss <- coin
-    let ai = performMoveAIalphabeta4PlyNonIO
+    let weakAI = performMoveAIalphabeta2PlyNonIO'
+    let strongAI = performMoveAIalphabeta5PlyNonIO'
     let gs = (GameState initialBoard Black)
     let singleGenomeScores = if (toss == 0)
         then
-            playnonIO 150 op genome ai ai gs
+            playnonIO' 150 op genome weakAI strongAI gs
         else
-            playnonIO 150 genome op ai ai gs 
+            playnonIO' 150 genome op weakAI strongAI gs 
     --let ones = length (filter (==(1)) singleGenomeScores)
     --let minusones = length (filter (==(-1)) singleGenomeScores)
     --let draws = length (filter (==(0)) singleGenomeScores)
     --return $ (genome, singleGenomeScores)
-    return singleGenomeScores         
+    singleGenomeScores         
 
     -- where
     --     singleGenomeScores = [score | o <- opponents, let score = playnonIO 150 o genome ai ai gs]
@@ -77,18 +78,20 @@ main = do
     -- genOnesOnly vs gen1 = 1 Black win
     
     let hundredOpponents = evalRand (randomGenomes 60 64 (0.1::Double) (1.0::Double) ) g
-    -- let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
-    
-    -- let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
-    -- let ones = length $ filter (==(1)) evalsingletest
-    -- let minusones = length $ filter (==(-1)) evalsingletest
-    -- let draws = length $ filter (==(0)) evalsingletest
-    -- print (minusones,ones,draws)
+    --let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
 
-    -- normal alpha beta pruning without randomness
-    let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
-    --let mintest = minimum testalphabetadepthlim
-    print testalphabetadepthlim
+    let sixtyBadOpponents = evalRand (randomGenomes 60 64 (0.0::Double) (0.0::Double) ) g
+    
+    let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
+    let ones = length $ filter (==(1)) evalsingletest
+    let minusones = length $ filter (==(-1)) evalsingletest
+    let draws = length $ filter (==(0)) evalsingletest
+    print (minusones,ones,draws)
+
+    -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
+    -- let mintest = minimum testalphabetadepthlim
+    -- print testalphabetadepthlim
+
     -- let maxtest = maximumBy (comparing fst) testalphabetadepthlim
     -- print maxtest
     --print mintest

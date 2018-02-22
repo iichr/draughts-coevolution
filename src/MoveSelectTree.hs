@@ -77,7 +77,7 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.25)::Double,(0.25))
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.35)::Double,(0.35))
     let res = zipWith (+) allStatesEvaluated l
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
@@ -86,7 +86,13 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- up to here the return type is Rand PureMT (Double, GameState)
     return $ snd b
    
-    
+
+performMoveAIalphabeta2PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta2PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 2 gs genome getSum    
+
+performMoveAIalphabeta5PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta5PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 5 gs genome getSum  
+
 -- *********************************************
 -- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
 -- *********************************************  
