@@ -472,9 +472,9 @@ getSum' g gs = do
 -- from the weights vector; a positive result: Player White has an advantage, Black does not, 
 -- and vice versa for a negative result
 getSum :: Genome Double -> GameState -> Double
-getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome) +
-                   1.2 * (fromIntegral jumpscount) + 0.7 * (fromIntegral simplemovescount)
---                   + (foldr (+) 0.0 $ getVectortoSumEdges gs genome)
+getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome)
+                  + 1.3 * (fromIntegral jumpscount) + 0.7 * (fromIntegral simplemovescount)
+--                   + (foldr (+) 0.0 $ getVectortoSumCentrePriority gs genome)
 
         where 
             jumpscount = length $ getJumps gs
@@ -483,27 +483,29 @@ getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome) +
             
             getVectortoSum :: GameState -> Genome Double -> [Double]
             getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
-                row <- [0..7]
-                col <- [0..7]
+                row <- [0,1,2,5,6,7]
+                col <- [0,1,6,7]
                 let pos = (row, col)
                 let square = fromJust $ getSquare (VectorBoard b) pos
                 let i = convertPos2Index pos
                 --let weightsvector = makeWeightinit
                 let weight = genome !! i
-                let w = (pieceVal square) * 1.7 * weight
+                let w = (pieceVal square) * 1.9 * weight
                 return w
 
-            -- getVectortoSumEdges :: GameState -> Genome Double -> [Double]
-            -- getVectortoSumEdges gs@(GameState (VectorBoard b) _) genome = do
-            --     row <- [1,6]
-            --     col <- [0..7]
-            --     let pos = (row, col)
-            --     let square = fromJust $ getSquare (VectorBoard b) pos
-            --     let i = convertPos2Index pos
-            --     --let weightsvector = makeWeightinit
-            --     let weight = genome !! i
-            --     let w = (pieceVal square) * 0.7 * weight
-            --     return w
+            -- rows 3 to 4 incl
+            -- cols 2 to 5 incl
+            getVectortoSumCentrePriority :: GameState -> Genome Double -> [Double]
+            getVectortoSumCentrePriority gs@(GameState (VectorBoard b) _) genome = do
+                row <- [3..4]
+                col <- [2..5]
+                let pos = (row, col)
+                let square = fromJust $ getSquare (VectorBoard b) pos
+                let i = convertPos2Index pos
+                --let weightsvector = makeWeightinit
+                let weight = genome !! i
+                let w = (pieceVal square) * 3 * weight
+                return w
 
           
 -- Get a tuple of the list of GameState and their respective sums
