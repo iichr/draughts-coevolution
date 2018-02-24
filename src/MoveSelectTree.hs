@@ -70,6 +70,23 @@ maxValue' alpha beta depth limit state genome evaluator =
 
           
 
+alphabetadepthlimneg' :: Double -> Double -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> Double) -> Rand PureMT GameState
+alphabetadepthlimneg' alpha beta depth limit state genome evaluator = do
+    -- join in place of concat
+    -- apply minValue' recursively to all elements of the list of successive states
+    -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
+    -- zip evaluation and state together
+    let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.35)::Double,(0.35))
+    let res = zipWith (+) allStatesEvaluated l
+    --let b = map ((,) r) (getSuccessiveStates state)
+    let tupleEvalState = zip res (getSuccessiveStates state)
+    -- up to here the return type is Rand PureMT [(Double, GameState)]
+    let b = minimumBy (comparing fst) tupleEvalState
+    -- up to here the return type is Rand PureMT (Double, GameState)
+    return $ snd b
+
+
 alphabetadepthlim' :: Double -> Double -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> Double) -> Rand PureMT GameState
 alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- join in place of concat
@@ -87,11 +104,18 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     return $ snd b
    
 
-performMoveAIalphabeta2PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta2PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 2 gs genome getSum    
+performMoveAIalphabeta0PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta0PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 0 gs genome getSum    
 
-performMoveAIalphabeta5PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta5PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 5 gs genome getSum  
+performMoveAIalphabeta4PlyNonIOneg' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta4PlyNonIOneg' genome gs = alphabetadepthlimneg' negInf posInf 0 4 gs genome getSum
+
+performMoveAIalphabeta0PlyNonIOneg' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta0PlyNonIOneg' genome gs = alphabetadepthlimneg' negInf posInf 0 0 gs genome getSum 
+
+performMoveAIalphabeta4PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
+performMoveAIalphabeta4PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 4 gs genome getSum
+
 
 -- *********************************************
 -- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
