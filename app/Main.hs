@@ -27,9 +27,9 @@ evaluate :: Genome Double -> Genome Double -> Rand PureMT Int
 evaluate gen1 gen2 = do
     toss <- coin
     -- one is maximising i.e Black first position
-    let maximiser = performMoveAIalphabeta4PlyNonIO'
+    let maximiser = maxplayer 4 
     -- two is minimising i.e second position always
-    let minimiser = performMoveAIalphabeta4PlyNonIOneg'
+    let minimiser = minplayer 4
 
     let gs = (GameState initialBoard Black)
     let singleGenomeScores = if (toss == 0)

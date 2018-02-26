@@ -27,14 +27,11 @@ argMax :: (Ord b, Num b) => [a] -> (a -> b) -> a
 argMax xs f = argMin xs (negate . f)
 --argMax xs f = maximumBy (comparing f) xs
 
--- argMin' :: Ord b => Rand PureMT [a] -> (a -> b) -> Rand PureMT a
--- argMin' xs f = do
---     ys <- xs
---     return $ minimumBy (comparing f) ys
 
 -- Whether the desired depth in the search has been reached
 stopCondition :: Int -> Int -> Bool
 stopCondition depth limit = depth == limit
+
 
 -- *********************************************
 -- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
@@ -77,7 +74,7 @@ alphabetadepthlimneg' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.35)::Double,(0.35))
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.1)::Double,(0.1))
     let res = zipWith (+) allStatesEvaluated l
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
@@ -94,7 +91,7 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.35)::Double,(0.35))
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.1)::Double,(0.1))
     let res = zipWith (+) allStatesEvaluated l
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
@@ -103,19 +100,6 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- up to here the return type is Rand PureMT (Double, GameState)
     return $ snd b
    
-
-performMoveAIalphabeta0PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta0PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 0 gs genome getSum    
-
-performMoveAIalphabeta4PlyNonIOneg' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta4PlyNonIOneg' genome gs = alphabetadepthlimneg' negInf posInf 0 4 gs genome getSum
-
-performMoveAIalphabeta0PlyNonIOneg' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta0PlyNonIOneg' genome gs = alphabetadepthlimneg' negInf posInf 0 0 gs genome getSum 
-
-performMoveAIalphabeta4PlyNonIO' :: Genome Double -> GameState -> Rand PureMT GameState
-performMoveAIalphabeta4PlyNonIO' genome gs = alphabetadepthlim' negInf posInf 0 4 gs genome getSum
-
 
 -- *********************************************
 -- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
@@ -178,50 +162,25 @@ minimaxdepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) =
                 where
                     endOfGame = isJust (whoWon state)
 
--- ******************************************
--- * IO PLAYERS, use with PLAY function *****
--- ******************************************
-
-performMoveAIalphabeta0Ply :: Genome Double -> GameState -> IO GameState
-performMoveAIalphabeta0Ply genome gs = return $ alphabetadepthlim 0 genome getSum gs
-
-performMoveAIalphabeta3Ply :: Genome Double -> GameState -> IO GameState
-performMoveAIalphabeta3Ply genome gs = return $ alphabetadepthlim 3 genome getSum gs
-
-performMoveAIalphabeta4Ply :: Genome Double ->  GameState -> IO GameState
-performMoveAIalphabeta4Ply genome gs = return $ alphabetadepthlim 4 genome getSum gs
-
-performMoveAIalphabeta5Ply :: Genome Double ->  GameState -> IO GameState
-performMoveAIalphabeta5Ply genome gs = return $ alphabetadepthlim 5 genome getSum gs
-
-performMoveAIalphabeta6Ply :: Genome Double ->  GameState -> IO GameState
-performMoveAIalphabeta6Ply genome gs = return $ alphabetadepthlim 6 genome getSum gs 
-
--- ******************************************
--- * MINIMAX IO PLAYERS, use with PLAY function *****
--- ******************************************
-
-performMoveMinimax3Ply :: Genome Double -> GameState -> IO GameState
-performMoveMinimax3Ply genome gs = return $ minimaxdepthlim 3 genome getSum gs
-
-performMoveMinimax4Ply :: Genome Double ->  GameState -> IO GameState
-performMoveMinimax4Ply genome gs = return $ minimaxdepthlim 4 genome getSum gs
 
 -- ***************************************************
--- * NON-IO PLAYERS, use with PLAYNONIO function *****
+-- *** NON-IO PLAYERS, use with PLAYNONIO function ***
+-- ********** SUPPLY PLY AS ARGUMENT *****************
 -- ***************************************************
 
-performMoveAIalphabeta0PlyNonIO :: Genome Double -> GameState -> GameState
-performMoveAIalphabeta0PlyNonIO genome gs = alphabetadepthlim 0 genome getSum gs
+maxplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
+maxplayer plyLimit genome gs = alphabetadepthlim' negInf posInf 0 plyLimit gs genome getSum
 
-performMoveAIalphabeta3PlyNonIO :: Genome Double -> GameState -> GameState
-performMoveAIalphabeta3PlyNonIO genome gs = alphabetadepthlim 3 genome getSum gs
+minplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
+minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSum
 
-performMoveAIalphabeta4PlyNonIO :: Genome Double -> GameState -> GameState
-performMoveAIalphabeta4PlyNonIO genome gs = alphabetadepthlim 4 genome getSum gs
 
-performMoveAIalphabeta5PlyNonIO :: Genome Double ->  GameState -> GameState
-performMoveAIalphabeta5PlyNonIO genome gs = alphabetadepthlim 5 genome getSum gs
+-- ******************************************
+-- * OTHER PLAYERS *****
+-- ******************************************
 
-performMoveAIalphabeta6PlyNonIO :: Genome Double ->  GameState -> GameState
-performMoveAIalphabeta6PlyNonIO genome gs = alphabetadepthlim 6 genome getSum gs 
+maxplayerIO :: Int -> Genome Double -> GameState -> IO GameState
+maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSum gs
+
+maxplayerNonRand :: Int -> Genome Double -> GameState -> GameState
+maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSum gs
