@@ -1,7 +1,17 @@
 module Evolution where
 
+import Data.List (intersperse, concat, foldl')
+import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
+import qualified Data.Vector as V
+import Control.Monad
+
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
+
+import DraughtsBoard
+import Utils
+import GamePlay
+import MoveSelectTree
 
 
 -- ***********
@@ -21,15 +31,93 @@ testt = do
 -- * END OF EXAMPLE *
 -- ***********
 
-type Genome a = [a]
 
--- type FitnessFun a = Genome a -> Int
 
-type SelectionFun a = [(Genome a, Double)] -> Rand PureMT [Genome a]
+-- ***************************************************
+-- *** NON-IO PLAYERS, use with PLAYNONIO function ***
+-- ********** SUPPLY PLY AS ARGUMENT *****************
+-- ***************************************************
 
-type Crossover a = (Genome a, Genome a) -> Rand PureMT (Genome a, Genome a)
+maxplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
+maxplayer plyLimit genome gs = alphabetadepthlim' negInf posInf 0 plyLimit gs genome getSum
 
-type Mutation a = Genome a -> Rand PureMT (Genome a)
+minplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
+minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSum
+
+
+-- ******************************************
+-- * OTHER PLAYERS *****
+-- ******************************************
+
+maxplayerIO :: Int -> Genome Double -> GameState -> IO GameState
+maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSum gs
+
+maxplayerNonRand :: Int -> Genome Double -> GameState -> GameState
+maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSum gs
+
+
+-- ********************************
+-- ***** BOARD SUM FUNCTIONS ******
+-- ********************************
+
+-- * WITH DIFFERENT WEIGHTS
+-- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
+-- from the weights vector; a positive result: Player White has an advantage, Black does not, 
+-- and vice versa for a negative result
+getSum :: Genome Double -> GameState -> Double
+getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome)
+                  + 1.3 * (fromIntegral jumpscount) + 0.7 * (fromIntegral simplemovescount)
+--                   + (foldr (+) 0.0 $ getVectortoSumCentrePriority gs genome)
+
+        where 
+            jumpscount = length $ getJumps gs
+            simplemovescount = length $ getSimpleMoves gs
+            
+            
+            getVectortoSum :: GameState -> Genome Double -> [Double]
+            getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
+                row <- [0,1,2,5,6,7]
+                col <- [0,1,6,7]
+                let pos = (row, col)
+                let square = fromJust $ getSquare (VectorBoard b) pos
+                let i = convertPos2Index pos
+                --let weightsvector = makeWeightinit
+                let weight = genome !! i
+                let w = (pieceVal square) * 1.9 * weight
+                return w
+
+            -- rows 3 to 4 incl
+            -- cols 2 to 5 incl
+            getVectortoSumCentrePriority :: GameState -> Genome Double -> [Double]
+            getVectortoSumCentrePriority gs@(GameState (VectorBoard b) _) genome = do
+                row <- [3..4]
+                col <- [2..5]
+                let pos = (row, col)
+                let square = fromJust $ getSquare (VectorBoard b) pos
+                let i = convertPos2Index pos
+                --let weightsvector = makeWeightinit
+                let weight = genome !! i
+                let w = (pieceVal square) * 3 * weight
+                return w
+
+
+-- * JUST THE SUM OF THE BOARD
+
+getSimpleSum :: Genome Double -> GameState -> Double
+getSimpleSum genome gs= foldr (+) 0.0 $ getVectortoSum gs genome
+         where    
+             getVectortoSum :: GameState -> Genome Double -> [Double]
+             getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
+                 row <- [0..7]
+                 col <- [0..7]
+                 let pos = (row, col)
+                 let square = fromJust $ getSquare (VectorBoard b) pos
+                 let i = convertPos2Index pos
+                 let weight = genome !! i
+                 let w = pieceVal square * weight
+                 return w
+
+
 
 randomGenomes :: (RandomGen g, Random a, Enum a) => Int -> Int -> a -> a -> Rand g [Genome a]
 randomGenomes len genomeLen from to = do
@@ -125,4 +213,51 @@ selectionTournament pop k = selectionLoop pop ([],0) k
             | otherwise = return $ fst chosen
 
 
+-- ******************************************************
+-- ********** EVALUATION (FITNESS) FUNCTION *************
+-- ******************************************************
+
+coin :: RandomGen g => Rand g Int
+coin = getRandomR (0,1)
+
+
+-- EVALUATION (fitness)
+-- given a population of genomes P
+-- generate 100 fixed oponents, keep them
+-- play EACH individual from p
+-- count how many times each individual won
+-- zip that with the genome in the form of (genome, number of wins)
+-- at the end map to obtain a list of [(genome, number of wins)]
+evaluate :: Genome Double -> Genome Double -> Rand PureMT Int
+evaluate gen1 gen2 = do
+    toss <- coin
+    -- one is maximising i.e Black first position
+    let maximiser = maxplayer 4 
+    -- two is minimising i.e second position always
+    let minimiser = minplayer 4
+
+    let gs = (GameState initialBoard Black)
+    let singleGenomeScores = if (toss == 0)
+        then
+            -- black is gen1 + maximising moves
+            -- white is gen2 + minimising moves
+            playnonIO' 150 gen1 gen2 maximiser minimiser gs
+        else
+            -- black is gen2 + maximising
+            -- white is gen1 + minimising
+            playnonIO' 150 gen2 gen1 maximiser minimiser gs 
+    --let ones = length (filter (==(1)) singleGenomeScores)
+    --let minusones = length (filter (==(-1)) singleGenomeScores)
+    --let draws = length (filter (==(0)) singleGenomeScores)
+    --return $ (genome, singleGenomeScores)
+    singleGenomeScores         
+
+    -- where
+    --     singleGenomeScores = [score | o <- opponents, let score = playnonIO 150 o genome ai ai gs]
+    --     ai = performMoveAIalphabeta4PlyNonIO
+    --     gs = (GameState initialBoard Black)
+        
+        -- ones = length (filter (==(1)) singleGenomeScores)
+        -- minusones = length (filter (==(-1)) singleGenomeScores)
+        -- draws = length (filter (==(0)) singleGenomeScores)
 

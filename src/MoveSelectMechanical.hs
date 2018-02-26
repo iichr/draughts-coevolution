@@ -1,6 +1,9 @@
 module MoveSelectMechanical where
 
-import Boardvector
+import Utils
+import DraughtsBoard
+import GamePlay
+
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import System.Random

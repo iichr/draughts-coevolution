@@ -1,13 +1,15 @@
 module MoveSelectTree where
 
-import Boardvector
 import Data.List (minimumBy, maximumBy)
 import Data.Ord (comparing)
 import Data.Maybe (isJust)
-import Evolution
 
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
+
+import Utils
+import DraughtsBoard
+import GamePlay
 
 -- Positive infinity
 posInf :: Fractional a => a
@@ -161,26 +163,3 @@ minimaxdepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) =
                 maximum [ minValue (1+depth) s | s <- getSuccessiveStates state ]
                 where
                     endOfGame = isJust (whoWon state)
-
-
--- ***************************************************
--- *** NON-IO PLAYERS, use with PLAYNONIO function ***
--- ********** SUPPLY PLY AS ARGUMENT *****************
--- ***************************************************
-
-maxplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
-maxplayer plyLimit genome gs = alphabetadepthlim' negInf posInf 0 plyLimit gs genome getSum
-
-minplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
-minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSum
-
-
--- ******************************************
--- * OTHER PLAYERS *****
--- ******************************************
-
-maxplayerIO :: Int -> Genome Double -> GameState -> IO GameState
-maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSum gs
-
-maxplayerNonRand :: Int -> Genome Double -> GameState -> GameState
-maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSum gs
