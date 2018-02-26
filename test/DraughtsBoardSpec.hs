@@ -1,9 +1,13 @@
-module BoardvectorSpec where
+module DraughtsBoardSpec where
 
 import Test.Hspec
-import Boardvector
 import qualified Data.Vector as V
 import Data.Maybe (fromMaybe, fromJust)
+
+import Utils
+import DraughtsBoard
+import GamePlay
+
 
 getBoardFromState :: GameState -> VectorBoard
 getBoardFromState (GameState (VectorBoard b) _) = VectorBoard b

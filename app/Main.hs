@@ -1,60 +1,19 @@
 module Main where
 
-import Lib
-import Boardvector
-import MoveSelectMechanical
-import MoveSelectTree
 import System.IO
-import Evolution
-
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
 import Data.List
 -- for comparing
 import Data.Ord
 
-coin :: RandomGen g => Rand g Int
-coin = getRandomR (0,1)
-
--- EVALUATION (fitness)
--- given a population of genomes P
--- generate 100 fixed oponents, keep them
--- play EACH individual from p
--- count how many times each individual won
--- zip that with the genome in the form of (genome, number of wins)
--- at the end map to obtain a list of [(genome, number of wins)]
-evaluate :: Genome Double -> Genome Double -> Rand PureMT Int
-evaluate gen1 gen2 = do
-    toss <- coin
-    -- one is maximising i.e Black first position
-    let maximiser = maxplayer 4 
-    -- two is minimising i.e second position always
-    let minimiser = minplayer 4
-
-    let gs = (GameState initialBoard Black)
-    let singleGenomeScores = if (toss == 0)
-        then
-            -- black is gen1 + maximising moves
-            -- white is gen2 + minimising moves
-            playnonIO' 150 gen1 gen2 maximiser minimiser gs
-        else
-            -- black is gen2 + maximising
-            -- white is gen1 + minimising
-            playnonIO' 150 gen2 gen1 maximiser minimiser gs 
-    --let ones = length (filter (==(1)) singleGenomeScores)
-    --let minusones = length (filter (==(-1)) singleGenomeScores)
-    --let draws = length (filter (==(0)) singleGenomeScores)
-    --return $ (genome, singleGenomeScores)
-    singleGenomeScores         
-
-    -- where
-    --     singleGenomeScores = [score | o <- opponents, let score = playnonIO 150 o genome ai ai gs]
-    --     ai = performMoveAIalphabeta4PlyNonIO
-    --     gs = (GameState initialBoard Black)
-        
-        -- ones = length (filter (==(1)) singleGenomeScores)
-        -- minusones = length (filter (==(-1)) singleGenomeScores)
-        -- draws = length (filter (==(0)) singleGenomeScores)
+import Lib
+import Utils
+import DraughtsBoard
+import GamePlay
+import MoveSelectTree
+import MoveSelectMechanical
+import Evolution
 
 
 main :: IO ()

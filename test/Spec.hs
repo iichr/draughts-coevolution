@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -F -pgmF hspec-discover #-}
 
-import BoardvectorSpec
+import DraughtsBoardSpec
 
 main :: IO()
 main = hspec spec
