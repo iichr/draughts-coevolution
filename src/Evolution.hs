@@ -261,3 +261,12 @@ evaluate gen1 gen2 = do
         -- minusones = length (filter (==(-1)) singleGenomeScores)
         -- draws = length (filter (==(0)) singleGenomeScores)
 
+
+evaluateNoCoin :: Genome Double -> Genome Double -> Rand PureMT Int
+evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
+        where
+            maximiser = maxplayer 4
+            minimiser = minplayer 4
+            gs = GameState initialBoard Black
+
+

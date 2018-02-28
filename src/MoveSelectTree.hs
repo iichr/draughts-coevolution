@@ -49,6 +49,7 @@ minValue' alpha beta depth limit state genome evaluator =
     where
         endOfGame = isJust (whoWon state)
         fmin val beta [] = val
+        -- if a state with lower than alpha evaluation has been reached, stop looking any further
         fmin val beta (s:gss) = if val <= alpha then val else fmin newVal (min beta newVal) gss
             where
                 newVal = min val (maxValue' alpha beta (depth+1) limit s genome evaluator)
@@ -75,8 +76,8 @@ alphabetadepthlimneg' alpha beta depth limit state genome evaluator = do
     -- apply minValue' recursively to all elements of the list of successive states
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
-    let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.1)::Double,(0.1))
+    let allStatesEvaluated = join $ [map (\s -> maxValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
     let res = zipWith (+) allStatesEvaluated l
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
@@ -93,7 +94,7 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((-0.1)::Double,(0.1))
+    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
     let res = zipWith (+) allStatesEvaluated l
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
