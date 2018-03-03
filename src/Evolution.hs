@@ -14,25 +14,6 @@ import GamePlay
 import MoveSelectTree
 
 
--- ***********
--- * EXAMPLE *
--- ***********
-die :: RandomGen g => Rand g Int
-die = getRandomR (1,6)
-
-dice :: RandomGen g => Int -> Rand g [Int]
-dice n = sequence (replicate n die)
-
-testt = do
-    rolls <- evalRandIO $ dice 10
-    print rolls
-
--- ***********
--- * END OF EXAMPLE *
--- ***********
-
-
-
 -- ***************************************************
 -- *** NON-IO PLAYERS, use with PLAYNONIO function ***
 -- ********** SUPPLY PLY AS ARGUMENT *****************
@@ -268,5 +249,51 @@ evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
             maximiser = maxplayer 4
             minimiser = minplayer 4
             gs = GameState initialBoard Black
+
+
+evaluateNoCoinAgainstMultiple :: Genome Double -> [Genome Double] -> Rand PureMT Int
+evaluateNoCoinAgainstMultiple gen1 opps = do 
+    allresults <- mapM (\op -> evaluateNoCoin op gen1) opps
+    -- filter just white wins as gen1 is White
+    return $ length $ filter (==(-1)) allresults
+
+    
+-- TODO check if valid
+evaluateToTuple :: [Genome Double] -> [Genome Double] -> [(Genome Double, Rand PureMT Int)]
+evaluateToTuple gen1s opps = do
+    gen1 <- gen1s
+    let evalscore = evaluateNoCoinAgainstMultiple gen1 opps
+    map ((,) gen1) [evalscore]
+
+
+-- Evaluation : play an individual once over each of 100 random strategies
+-- obtain fitness - how many wins against those 100 opponents
+-- Selection: we have each genome paired with its fitness
+-- obtain a genome from that
+-- Do selection 2 times
+
+-- -- Generate population
+-- generation :: Rand PureMT [(Genome Double, Int)] -> 
+--     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+--     (Genome Double -> [Genome Double] -> Rand PureMT (Genome Double, Int)) ->
+--     Crossover Double -> 
+--     Mutation Double ->
+--     [Genome Double] -> 
+--     Rand PureMT [(Genome Double, Int)]
+-- generation popFitnessTuple selectionFun evalFun crossoverFun mutationFun opps = do
+--     -- SELECTION parent 1 - requires Genomes to be zipped with their fitness
+--     parent1 <- selectionFun popFitnessTuple 4
+--     -- SELECTION parent 2 - requires Genomes to be zipped with their fitness
+--     parent2 <- selectionFun popFitnessTuple 4
+--     let parents = parent1:parent2:[] -- [Genome a]
+--     -- MUTATION
+--     parents <- mapM mutationFun parents
+--     -- CROSSOVER
+--     parents <- doCrossovers parents crossoverFun
+--     -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
+--     let newGen = [evalFun p opp | p <- parents, opp <- opps]
+--     (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus)
+--     nextGenerationPop <- generation newGen selectionFun evalFun crossoverFun mutationFun
+--     return $ (popFitnessTuple : nextGenerationPop)
 
 

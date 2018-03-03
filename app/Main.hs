@@ -16,6 +16,18 @@ import MoveSelectMechanical
 import Evolution
 
 
+-- executeEA :: [Genome Double] -> 
+--     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+--     (Genome Double -> [Genome Double] -> (Genome Double, Int)) ->
+--     Crossover Double -> 
+--     Mutation Double -> 
+--     PureMT ->
+--     [(Genome Double, Int)]
+-- executeEA pop selectionFun evalFun crossoverFun mutationFun g = do
+--     let popFitnessTuple = map evalFun pop in 
+--         evalRand (generation popFitnessTuple selectionFun evalFun crossoverFun mutationFun) g
+
+
 main :: IO ()
 -- output is written immediately (never stored in the buffer)
 main = do
@@ -39,6 +51,7 @@ main = do
     let genOnesOnly = take 64 $ repeat (0.1::Double)
     let genZerosOnly = take 64 $ repeat (0.0::Double)
 
+
     -- let run = playnonIO 150 genOnesOnly gen1 performMoveAIalphabeta3PlyNonIO performMoveAIalphabeta3PlyNonIO (GameState initialBoard Black)
     -- play 150 genOnesOnly gen1 performMoveMinimax3Ply performMoveMinimax3Ply (GameState initialBoard Black)
     
@@ -51,12 +64,17 @@ main = do
 
     -- ************************
     -- * TESTS
-    let evalsingletest = evalRand (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus) g
+    let evalsingletest = evalRand (mapM (\opps -> evaluateNoCoin opps genOnesOnly) twentyFixedRandomGenomes) g
     let ones = length $ filter (==(1)) evalsingletest
     let minusones = length $ filter (==(-1)) evalsingletest
     let draws = length $ filter (==(0)) evalsingletest
     print (minusones,ones,draws)
     --print evalsingletest
+
+    -- ************************
+    -- * TEST as above but returns the number of -1s only (wins of player provided - White)
+    let evalagainstmultiple = evalRand (evaluateNoCoinAgainstMultiple genOnesOnly twentyFixedRandomGenomes) g
+    print $ evalagainstmultiple == minusones
 
 
     -- ************************
@@ -68,6 +86,9 @@ main = do
     -- let minusones = length $ filter (==(-1)) p
     -- let draws = length $ filter (==(0)) p
     -- print (minusones,ones,draws)
+
+
+    
 
 
 
