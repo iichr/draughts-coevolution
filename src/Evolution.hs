@@ -257,9 +257,10 @@ evaluateNoCoinAgainstMultiple gen1 opps = do
     -- filter just white wins as gen1 is White
     return $ length $ filter (==(-1)) allresults
 
-    
--- TODO check if valid
-evaluateToTuple :: [Genome Double] -> [Genome Double] -> [(Genome Double, Rand PureMT Int)]
+
+-- Given a list of genomes and a list of genome opponents evaluate each genome against all of the opponents
+-- and return the number of wins (-1.0s) against them (provided we play as White)
+evaluateToTuple  :: [Genome Double] -> [Genome Double] -> [(Genome Double, Rand PureMT Int)]
 evaluateToTuple gen1s opps = do
     gen1 <- gen1s
     let evalscore = evaluateNoCoinAgainstMultiple gen1 opps
