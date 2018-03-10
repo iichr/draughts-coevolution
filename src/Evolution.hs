@@ -13,6 +13,8 @@ import Utils
 import GamePlay
 import MoveSelectTree
 
+import Data.Functor.Identity
+
 
 -- ***************************************************
 -- *** NON-IO PLAYERS, use with PLAYNONIO function ***
@@ -260,11 +262,21 @@ evaluateNoCoinAgainstMultiple gen1 opps = do
 
 -- Given a list of genomes and a list of genome opponents evaluate each genome against all of the opponents
 -- and return the number of wins (-1.0s) against them (provided we play as White)
-evaluateToTuple  :: [Genome Double] -> [Genome Double] -> [(Genome Double, Rand PureMT Int)]
+evaluateToTuple  :: [Genome Double] -> [Genome Double] -> [(Genome Double,  Rand PureMT Int)]
 evaluateToTuple gen1s opps = do
     gen1 <- gen1s
     let evalscore = evaluateNoCoinAgainstMultiple gen1 opps
     map ((,) gen1) [evalscore]
+
+
+
+-- testing monad unpacking   
+fortest :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
+fortest ((a,b):xs) = do
+   y <- b
+   z <- fortest xs
+   --return $ foldr (:) [(a,y+2)] z
+   return $ [(a,y+2)] ++ z
 
 
 -- Evaluation : play an individual once over each of 100 random strategies

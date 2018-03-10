@@ -81,7 +81,7 @@ main = do
     let gen12 = gen1:gen2:[]
     let evaluateToTuples = evaluateToTuple gen12 twentyFixedRandomGenomes
     let c = [(a,cc) | (a,b) <- evaluateToTuples, let cc = evalRand b g]
-    print $ "Number of white wins per given genome: /n" ++ show c
+    print $ "Number of white wins per given genome: " ++ show c
 
     -- ***********************
     -- * VERIFY CORRECTNESS OF EVALUATION TO TUPLE
