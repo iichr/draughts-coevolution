@@ -150,16 +150,16 @@ spec = do
                 whoseTile Nothing White `shouldBe` False
                 whoseTile Nothing Black `shouldBe` False
     
-    describe "canMoveInto" $ do
-        it "is false when on or both of the elements of position is/are out of the board" $ do
-            [canMoveInto initialBoard (x,y) | x <- [-1,-2,-3,-15,28734,8,9,13], y <- [1,2,3,4,0,-121,-31,424]]
-            `shouldBe` replicate 64 False
-        it "is false when the position to move into is not empty" $ do
-            let alloccupied = [(y,x)| x<-[0,2,4,6],y <- [1,5,7]] ++ [(z,k) | z <- [0,2,6], k<-[1,3,5,7]]
-            [canMoveInto initialBoard pss | pss <- alloccupied] `shouldBe` replicate 24 False
-        it "is true when the position is within the board and empty" $ do
-            let allunoccupied = [(x,y)| x<-[0,2,6],y <- [0,2,4,6]] ++ [(z,k) | z <- [1,5,7], k<-[1,3,5,7]] ++ [(3,u)|u<-[0..7]] ++ [(4,v)|v<-[0..7]]
-            [canMoveInto initialBoard pss | pss <- allunoccupied] `shouldBe` replicate 40 True
+    -- describe "canMoveInto" $ do
+    --     it "is false when on or both of the elements of position is/are out of the board" $ do
+    --         [canMoveInto initialBoard (x,y) | x <- [-1,-2,-3,-15,28734,8,9,13], y <- [1,2,3,4,0,-121,-31,424]]
+    --         `shouldBe` replicate 64 False
+    --     it "is false when the position to move into is not empty" $ do
+    --         let alloccupied = [(y,x)| x<-[0,2,4,6],y <- [1,5,7]] ++ [(z,k) | z <- [0,2,6], k<-[1,3,5,7]]
+    --         [canMoveInto initialBoard pss | pss <- alloccupied] `shouldBe` replicate 24 False
+    --     it "is true when the position is within the board and empty" $ do
+    --         let allunoccupied = [(x,y)| x<-[0,2,6],y <- [0,2,4,6]] ++ [(z,k) | z <- [1,5,7], k<-[1,3,5,7]] ++ [(3,u)|u<-[0..7]] ++ [(4,v)|v<-[0..7]]
+    --         [canMoveInto initialBoard pss | pss <- allunoccupied] `shouldBe` replicate 40 True
 
     describe "simpleMove" $ do
         context "when given a board and a position that is empty or non-existent" $ do
@@ -198,18 +198,18 @@ spec = do
             `shouldBe`
             [0, 5, 7, 20, 21, 27, 31, 32, 41, 51, 54, 55, 56, 58, 63] 
     
-    describe "getSum" $ do
-        it "gets the weighted piece differential of different boards" $ do
-            let b = pieceVal (Tile Black Man)
-            let bk = pieceVal (Tile Black King)
-            let w = pieceVal (Tile White Man)
-            let wk = pieceVal (Tile White King)
-            getSum (GameState testBoard5 White) `shouldBe` 7*wk + 3*bk
-            getSum (GameState testBoard1 White) `shouldBe` bk + 7*b + 3*w
-            getSum (GameState testBoard4 White) `shouldBe` 6*w + 9*b + bk
-            getSum (GameState testBoard3 White) `shouldBe` 5*b + 2*wk + 7*w
-        it "of the initialBoard should be 0.0" $ do
-            getSum (GameState initialBoard White) `shouldBe` 0.0
+    -- describe "getSum" $ do
+    --     it "gets the weighted piece differential of different boards" $ do
+    --         let b = pieceVal (Tile Black Man)
+    --         let bk = pieceVal (Tile Black King)
+    --         let w = pieceVal (Tile White Man)
+    --         let wk = pieceVal (Tile White King)
+    --         getSum (GameState testBoard5 White) `shouldBe` 7*wk + 3*bk
+    --         getSum (GameState testBoard1 White) `shouldBe` bk + 7*b + 3*w
+    --         getSum (GameState testBoard4 White) `shouldBe` 6*w + 9*b + bk
+    --         getSum (GameState testBoard3 White) `shouldBe` 5*b + 2*wk + 7*w
+    --     it "of the initialBoard should be 0.0" $ do
+    --         getSum (GameState initialBoard White) `shouldBe` 0.0
         
     describe "figureCount" $ do
         it "given an empty board should not crash but return 0 figures each" $ do
