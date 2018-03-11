@@ -14,6 +14,7 @@ import GamePlay
 import MoveSelectTree
 
 import Data.Functor.Identity
+import qualified Data.Map.Strict as M
 
 
 -- ***************************************************
@@ -22,10 +23,10 @@ import Data.Functor.Identity
 -- ***************************************************
 
 maxplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
-maxplayer plyLimit genome gs = alphabetadepthlim' negInf posInf 0 plyLimit gs genome getSum
+maxplayer plyLimit genome gs = alphabetadepthlim' negInf posInf 0 plyLimit gs genome getSimpleSum
 
 minplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
-minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSum
+minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSimpleSum
 
 
 -- ******************************************
@@ -33,10 +34,10 @@ minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs
 -- ******************************************
 
 maxplayerIO :: Int -> Genome Double -> GameState -> IO GameState
-maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSum gs
+maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSimpleSum gs
 
 maxplayerNonRand :: Int -> Genome Double -> GameState -> GameState
-maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSum gs
+maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSimpleSum gs
 
 
 -- ********************************
@@ -95,10 +96,16 @@ getSimpleSum genome gs= foldr (+) 0.0 $ getVectortoSum gs genome
                  col <- [0..7]
                  let pos = (row, col)
                  let square = fromJust $ getSquare (VectorBoard b) pos
-                 let i = convertPos2Index pos
-                 let weight = genome !! i
-                 let w = pieceVal square * weight
-                 return w
+                 let i = M.lookup pos positionIndicesMap
+                 if isNothing i
+                    then
+                        return $ pieceVal square * 0
+                    else
+                        return $ pieceVal square * (genome !! (fromJust i))
+                 -- let i = convertPos2Index pos
+                 -- let weight = genome !! i
+                 --let w = pieceVal square * weight
+                 --return w
 
 
 
