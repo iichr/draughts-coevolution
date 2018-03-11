@@ -253,8 +253,8 @@ evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
             gs = GameState initialBoard Black
 
 
-evaluateNoCoinAgainstMultiple :: Genome Double -> [Genome Double] -> Rand PureMT Int
-evaluateNoCoinAgainstMultiple gen1 opps = do 
+evaluateNoCoinAgainstMultiple :: [Genome Double] -> Genome Double -> Rand PureMT Int
+evaluateNoCoinAgainstMultiple opps gen1 = do 
     allresults <- mapM (\op -> evaluateNoCoin op gen1) opps
     -- filter just white wins as gen1 is White
     return $ length $ filter (==(-1)) allresults
@@ -263,50 +263,73 @@ evaluateNoCoinAgainstMultiple gen1 opps = do
 -- Given a list of genomes and a list of genome opponents evaluate each genome against all of the opponents
 -- and return the number of wins (-1.0s) against them (provided we play as White)
 evaluateToTuple  :: [Genome Double] -> [Genome Double] -> [(Genome Double,  Rand PureMT Int)]
-evaluateToTuple gen1s opps = do
+evaluateToTuple opps gen1s = do
     gen1 <- gen1s
-    let evalscore = evaluateNoCoinAgainstMultiple gen1 opps
+    let evalscore = evaluateNoCoinAgainstMultiple opps gen1
     map ((,) gen1) [evalscore]
 
 
-
--- testing monad unpacking   
-fortest :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
-fortest ((a,b):xs) = do
+-- Unpacking a tuple within a monad to a monadic tuple   
+toMonadTuple :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
+toMonadTuple ((a,b):xs) = do
    y <- b
-   z <- fortest xs
+   z <- toMonadTuple xs
    --return $ foldr (:) [(a,y+2)] z
-   return $ [(a,y+2)] ++ z
+   return $ [(a,y)] ++ z
 
 
--- Evaluation : play an individual once over each of 100 random strategies
--- obtain fitness - how many wins against those 100 opponents
--- Selection: we have each genome paired with its fitness
--- obtain a genome from that
--- Do selection 2 times
-
--- -- Generate population
--- generation :: Rand PureMT [(Genome Double, Int)] -> 
---     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
---     (Genome Double -> [Genome Double] -> Rand PureMT (Genome Double, Int)) ->
---     Crossover Double -> 
---     Mutation Double ->
---     [Genome Double] -> 
---     Rand PureMT [(Genome Double, Int)]
--- generation popFitnessTuple selectionFun evalFun crossoverFun mutationFun opps = do
---     -- SELECTION parent 1 - requires Genomes to be zipped with their fitness
---     parent1 <- selectionFun popFitnessTuple 4
---     -- SELECTION parent 2 - requires Genomes to be zipped with their fitness
---     parent2 <- selectionFun popFitnessTuple 4
---     let parents = parent1:parent2:[] -- [Genome a]
---     -- MUTATION
---     parents <- mapM mutationFun parents
---     -- CROSSOVER
---     parents <- doCrossovers parents crossoverFun
---     -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
---     let newGen = [evalFun p opp | p <- parents, opp <- opps]
---     (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus)
---     nextGenerationPop <- generation newGen selectionFun evalFun crossoverFun mutationFun
---     return $ (popFitnessTuple : nextGenerationPop)
 
 
+-- * Generate population using the following provided:
+-- * list of (genome, fitness) tuples
+-- * selection function taking such a tuple - do 2 times to obtain 2 parents
+-- / current implementation is based on tournament selection
+-- / a value for number of competitions needs to be specified
+-- *! evaluation function - needs to produce same outcome as popfitnesstuple!
+-- / evaluateToTuple Ours Opponents :: [(Genome Double,  Rand PureMT Int)]
+-- / then call toMonadTuple on that
+-- * crossover function - apply to the 2 parents resulting from mutation
+-- * mutation function - apply a mutation to the 2 parents from selection
+-- * list of opponent genomes to play against
+generation :: Rand PureMT [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    Rand PureMT [(Genome Double, Int)]
+generation pop selectionFun evalFun crossoverFun mutationFun opps = do
+    popFitnessTuple <- pop
+    -- SELECTION parent 1 - requires genomes to be zipped with their fitness
+    parent1 <- selectionFun popFitnessTuple 4
+    -- SELECTION parent 2 - requires genomes to be zipped with their fitness
+    parent2 <- selectionFun popFitnessTuple 4
+    let parents = parent1:parent2:[] -- [Genome a]
+    -- MUTATION
+    parents <- mapM mutationFun parents
+    -- CROSSOVER
+    parents <- doCrossovers parents crossoverFun
+    -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
+    let newPop = evalFun opps parents
+    -- let newGen = [evalFun p opp | p <- parents, opp <- opps]
+    -- (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus)
+    nextGenerationPop <- generation newPop selectionFun evalFun crossoverFun mutationFun opps
+    return $ (popFitnessTuple ++ nextGenerationPop)
+
+
+-- Execute the evolutionary algorithm by providing a random number generator
+-- runs for a number of generations k
+executeEA :: Int -> 
+    [Genome Double] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [(Genome Double, Int)]
+executeEA k initialPop selectionFun evalFun crossoverFun mutationFun opps g =
+    take k $ evalRand (generation pop selectionFun evalFun crossoverFun mutationFun opps) g
+    where
+        -- evaluate intitial population to a list of (genome, fitness) tuples
+        pop = evalFun opps initialPop

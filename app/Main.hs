@@ -73,7 +73,7 @@ main = do
 
     -- ************************
     -- * TEST as above but returns the number of -1s only (wins of player provided - White)
-    let evalagainstmultiple = evalRand (evaluateNoCoinAgainstMultiple genOnesOnly twentyFixedRandomGenomes) g
+    let evalagainstmultiple = evalRand (evaluateNoCoinAgainstMultiple twentyFixedRandomGenomes genOnesOnly) g
     print $ evalagainstmultiple == minusones
 
     -- ************************
@@ -84,7 +84,7 @@ main = do
     print $ "Number of white wins per given genome: " ++ show c
 
     -- ***********************
-    -- * VERIFY CORRECTNESS OF EVALUATION TO TUPLE
+    -- * VERIFY CORRECTNESS OF EVALUATION TO TUPLE - testing
     let evaltest2 = evalRand (mapM (\opps -> evaluateNoCoin opps gen1) twentyFixedRandomGenomes) g
     print $ (length $ filter (==(-1)) evaltest2) == (snd $ head c)
     let evaltest3 = evalRand (mapM (\opps -> evaluateNoCoin opps gen2) twentyFixedRandomGenomes) g
