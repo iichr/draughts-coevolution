@@ -53,7 +53,7 @@ main = do
 
      -- ***************************************
     -- * SET UP RANDOM POPULATION OF GENOMES TO TEST AGAINST
-    let pop64 = evalRand (randomGenomes 64 64 (0.0::Double) (1.0::Double) ) g
+    let pop64 = evalRand (randomGenomes 5 64 (0.0::Double) (1.0::Double) ) g
 
     -- let run = playnonIO 150 genOnesOnly gen1 performMoveAIalphabeta3PlyNonIO performMoveAIalphabeta3PlyNonIO (GameState initialBoard Black)
     -- play 150 genOnesOnly gen1 performMoveMinimax3Ply performMoveMinimax3Ply (GameState initialBoard Black)
@@ -65,47 +65,12 @@ main = do
     let hundredOppsZerosOnly    =   evalRand (randomGenomes 60 64 (0.0::Double) (0.0::Double) ) g
     --let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
 
-    -- ************************
-    -- * TESTS
-    let evalsingletest = evalRand (mapM (\opps -> evaluateNoCoin opps genOnesOnly) twentyFixedRandomGenomes) g
-    let ones = length $ filter (==(1)) evalsingletest
-    let minusones = length $ filter (==(-1)) evalsingletest
-    let draws = length $ filter (==(0)) evalsingletest
-    print (minusones,ones,draws)
-    --print evalsingletest
-
-    -- ************************
-    -- * TEST as above but returns the number of -1s only (wins of player provided - White)
-    let evalagainstmultiple = evalRand (evaluateNoCoinAgainstMultiple twentyFixedRandomGenomes genOnesOnly) g
-    print $ evalagainstmultiple == minusones
-
-    -- ************************
-    -- * TEST EVALUATE TO TUPLE
-    let gen12 = gen1:gen2:[]
-    let evaluateToTuples = evaluateToTuple gen12 twentyFixedRandomGenomes
-    let c = [(a,cc) | (a,b) <- evaluateToTuples, let cc = evalRand b g]
-    print $ "Number of white wins per given genome: " ++ show c
-
-    -- ***********************
-    -- * VERIFY CORRECTNESS OF EVALUATION TO TUPLE - testing
-    let evaltest2 = evalRand (mapM (\opps -> evaluateNoCoin opps gen1) twentyFixedRandomGenomes) g
-    print $ (length $ filter (==(-1)) evaltest2) == (snd $ head c)
-    let evaltest3 = evalRand (mapM (\opps -> evaluateNoCoin opps gen2) twentyFixedRandomGenomes) g
-    print $ (length $ filter (==(-1)) evaltest3) == (snd $ head $ tail c)
-
-    -- ************************
-    -- * TESTS TO RUN FOR TWO SINGLE GENOMES, TEST IS REPEATED k TIMES
-    -- let evalsingletest = evaluateNoCoin genOnesOnly gen1
-    -- let l = sequence (replicate 50 evalsingletest)
-    -- let p = evalRand l g
-    -- let ones = length $ filter (==(1)) p
-    -- let minusones = length $ filter (==(-1)) p
-    -- let draws = length $ filter (==(0)) p
-    -- print (minusones,ones,draws)
-
 
     -- *************************
     -- * TESTS EA
+    putStrLn "************************************************** Initial genomes"
+    print hundredOppsPlusToPlus
+    putStrLn "END OF INITIAL GENOMES **************************************************"
     let res = executeEA 50 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.05) hundredOppsPlusToPlus g
     print res
 

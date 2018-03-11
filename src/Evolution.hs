@@ -271,6 +271,7 @@ evaluateToTuple opps gen1s = do
 
 -- Unpacking a tuple within a monad to a monadic tuple   
 toMonadTuple :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
+toMonadTuple [] = return $ []
 toMonadTuple ((a,b):xs) = do
    y <- b
    z <- toMonadTuple xs

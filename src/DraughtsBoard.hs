@@ -141,51 +141,51 @@ jump (VectorBoard b) orig@(row, col)
 -- ***** FOR TESTING PURPOSES- BORROWED FROM BOARDVECTORSPEC *****
 -- ********************
 
-generateRow :: [Int] -> Square -> V.Vector Square
-generateRow ys sq = V.replicate 8 Empty V.// (\x -> [(z,sq) | z <- x]) ys
+-- generateRow :: [Int] -> Square -> V.Vector Square
+-- generateRow ys sq = V.replicate 8 Empty V.// (\x -> [(z,sq) | z <- x]) ys
 
-changeRow :: V.Vector Square -> [Int] -> Square -> V.Vector Square
-changeRow vect ys sq = vect V.// (\x -> [(z,sq) | z <- x]) ys
+-- changeRow :: V.Vector Square -> [Int] -> Square -> V.Vector Square
+-- changeRow vect ys sq = vect V.// (\x -> [(z,sq) | z <- x]) ys
 
-fullRow :: [Int] -> Square -> [Int] -> Square -> V.Vector Square
-fullRow xs s1 ys x2 = changeRow (generateRow xs s1) ys x2
+-- fullRow :: [Int] -> Square -> [Int] -> Square -> V.Vector Square
+-- fullRow xs s1 ys x2 = changeRow (generateRow xs s1) ys x2
 
-badBoard :: VectorBoard
--- white's turn
-badBoard = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, r7] where
-    b = Tile Black Man
-    w = Tile White Man
-    --bk = Tile Black King
-    --wk = Tile White King
-    --empty = V.replicate 8 Empty
-    r0 = generateRow [1,3,5,7] b
-    r1 = generateRow [0,2,4,6] b
-    r2 = generateRow [1,3,7] b
-    r3 = generateRow [6] b
-    r4 = generateRow [5] w
-    r5 = generateRow [0,2,6] w
-    r6 = generateRow [1,3,5,7] w
-    r7 =  generateRow [0,2,4,6] w
+-- badBoard :: VectorBoard
+-- -- white's turn
+-- badBoard = VectorBoard $ V.fromList [r0, r1, r2, r3, r4, r5, r6, r7] where
+--     b = Tile Black Man
+--     w = Tile White Man
+--     --bk = Tile Black King
+--     --wk = Tile White King
+--     --empty = V.replicate 8 Empty
+--     r0 = generateRow [1,3,5,7] b
+--     r1 = generateRow [0,2,4,6] b
+--     r2 = generateRow [1,3,7] b
+--     r3 = generateRow [6] b
+--     r4 = generateRow [5] w
+--     r5 = generateRow [0,2,6] w
+--     r6 = generateRow [1,3,5,7] w
+--     r7 =  generateRow [0,2,4,6] w
 
-    --getJumps (GameState badBoard White)
-    -- [((4,5),((2,7),(3,6)))] is WRONG
+--     --getJumps (GameState badBoard White)
+--     -- [((4,5),((2,7),(3,6)))] is WRONG
 
-badBoard2 :: VectorBoard
--- black's turn
-badBoard2 = VectorBoard $ V.fromList [r0, r1, empty, r3, r4, r5, r6, r7] where
-    b = Tile Black Man
-    w = Tile White Man
-    empty = V.replicate 8 Empty
+-- badBoard2 :: VectorBoard
+-- -- black's turn
+-- badBoard2 = VectorBoard $ V.fromList [r0, r1, empty, r3, r4, r5, r6, r7] where
+--     b = Tile Black Man
+--     w = Tile White Man
+--     empty = V.replicate 8 Empty
 
-    r0 = generateRow [1,5,7] b
-    r1 = generateRow [0,2,4,6] b
-    --r2 = empty
-    r3 = generateRow [0,2] b
-    r4 = generateRow [5] b
-    r5 = generateRow [0,4,6] w
-    r6 = fullRow [1,3] w [5] b
-    r7 =  generateRow [0,2,6] w
+--     r0 = generateRow [1,5,7] b
+--     r1 = generateRow [0,2,4,6] b
+--     --r2 = empty
+--     r3 = generateRow [0,2] b
+--     r4 = generateRow [5] b
+--     r5 = generateRow [0,4,6] w
+--     r6 = fullRow [1,3] w [5] b
+--     r7 =  generateRow [0,2,6] w
 
-    --getJumps (GameState badBoard2 Black)
-    --[((4,5),((6,7),(5,4)))] is wrong
-    -- inbetween is wrong!!! FIXED. Issue was filtering
+--     --getJumps (GameState badBoard2 Black)
+--     --[((4,5),((6,7),(5,4)))] is wrong
+--     -- inbetween is wrong!!! FIXED. Issue was filtering
