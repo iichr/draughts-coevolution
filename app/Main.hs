@@ -51,6 +51,9 @@ main = do
     let genOnesOnly = take 64 $ repeat (0.1::Double)
     let genZerosOnly = take 64 $ repeat (0.0::Double)
 
+     -- ***************************************
+    -- * SET UP RANDOM POPULATION OF GENOMES TO TEST AGAINST
+    let pop64 = evalRand (randomGenomes 64 64 (0.0::Double) (1.0::Double) ) g
 
     -- let run = playnonIO 150 genOnesOnly gen1 performMoveAIalphabeta3PlyNonIO performMoveAIalphabeta3PlyNonIO (GameState initialBoard Black)
     -- play 150 genOnesOnly gen1 performMoveMinimax3Ply performMoveMinimax3Ply (GameState initialBoard Black)
@@ -101,6 +104,10 @@ main = do
     -- print (minusones,ones,draws)
 
 
+    -- *************************
+    -- * TESTS EA
+    let res = executeEA 50 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.05) hundredOppsPlusToPlus g
+    print res
 
     -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
     -- let mintest = minimum testalphabetadepthlim

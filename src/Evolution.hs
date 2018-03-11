@@ -278,7 +278,9 @@ toMonadTuple ((a,b):xs) = do
    return $ [(a,y)] ++ z
 
 
-
+-- evaluation function combining evaluateToTuple and toMonadTuple
+myEval :: [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
+myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
 
 -- * Generate population using the following provided:
 -- * list of (genome, fitness) tuples
