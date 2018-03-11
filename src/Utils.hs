@@ -1,17 +1,20 @@
 module Utils where
 
-import Data.List (intersperse, concat, foldl')
+import Data.List (intersperse, concat, foldl', sortBy)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
 
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
+import qualified Data.Map as M
 -- import qualified Data.Vector.Unboxed.Mutable as MUV
 import System.Random
 
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
+import Control.Applicative
+import Data.Function (on)
 
 -- ** GENERAL GAME DATA TYPES **
 
@@ -102,10 +105,18 @@ instance Show GameState where
 convertPos2Index :: Position -> Int
 convertPos2Index (row, col) = row * 8 + col
 
+listOfTuplesIndices :: [(Position, Int)]
+listOfTuplesIndices = zip allPositionsInOrder [0..32]
+        where
+            allPositionsInOrder = sortBy (compare `on` fst) (evenrows ++ oddrows)
+            -- even rows means odd columns 
+            evenrows = liftA2 (,) [x| x <-[0..7], even x] [y | y <- [0..7], odd y]
+            -- odd rows means even columns
+            oddrows  = liftA2 (,) [x| x <-[0..7], odd x ] [y | y <- [0..7], even y]
+    
 
 
 -- ** MOVE AUXILIARY FUNCTIONS **
-
 
 -- Convert a jump triple in the form of (origin, (destination, inbetween)) 
 -- to (origin, inbetween, destination)
