@@ -7,7 +7,7 @@ import Control.Monad
 
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 -- import qualified Data.Vector.Unboxed.Mutable as MUV
 import System.Random
 
@@ -113,6 +113,9 @@ listOfTuplesIndices = zip allPositionsInOrder [0..32]
             evenrows = liftA2 (,) [x| x <-[0..7], even x] [y | y <- [0..7], odd y]
             -- odd rows means even columns
             oddrows  = liftA2 (,) [x| x <-[0..7], odd x ] [y | y <- [0..7], even y]
+
+
+positionIndicesMap = M.fromList listOfTuplesIndices
     
 
 
