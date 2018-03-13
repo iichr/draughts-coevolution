@@ -393,7 +393,7 @@ generationTotalReplacement' :: (Int) -> (Int) ->
     [Genome Double] -> 
     Rand PureMT [(Genome Double, Int)]
 generationTotalReplacement' count tournSize pop selectionFun evalFun crossoverFun mutationFun opps
-   | count >= 0 = do
+   | count > 0 = do
         popFitnessTuple <- pop
         -- SELECTION parent 1 - requires genomes to be zipped with their fitness
         parent1 <- selectionFun popFitnessTuple tournSize
@@ -408,11 +408,12 @@ generationTotalReplacement' count tournSize pop selectionFun evalFun crossoverFu
         newPop <- evalFun opps parents
         nextGenerationPop <- generationTotalReplacement' (count-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps
         return $ (newPop ++ nextGenerationPop)
+    -- make otherwise case execute a new generation from the one just produced when the count is over?
     | otherwise = return $ []
 
 -- Execute the evolutionary algorithm by providing a random number generator
--- runs for a number of generations k
-executeEAreplacement :: Int -> 
+-- runs only for one generation
+executeEAonce :: Int -> 
     [Genome Double] -> 
     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
     ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
@@ -421,9 +422,48 @@ executeEAreplacement :: Int ->
     [Genome Double] -> 
     PureMT ->
     [(Genome Double, Int)]
-executeEAreplacement tournSize initialPop selectionFun evalFun crossoverFun mutationFun opps g =
+executeEAonce tournSize initialPop selectionFun evalFun crossoverFun mutationFun opps g =
     -- take k $ evalRand (generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
     evalRand (generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
     where
         -- evaluate intitial population to a list of (genome, fitness) tuples
         pop = evalFun opps initialPop
+
+
+executeEAreplacement :: Int -> 
+    Int ->
+    [Genome Double] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [(Genome Double, Int)]
+executeEAreplacement nrGens tournSize initialPop selectionFun evalFun crossoverFun mutationFun opps g = do
+    let pop = evalFun opps initialPop
+    -- Rand PureMT [(Genome Double, Int)]
+    let firstGen = generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps
+    if nrGens > 0
+        then executeEAreplacement' (nrGens - 1) tournSize firstGen selectionFun evalFun crossoverFun mutationFun opps g
+    else
+        evalRand firstGen g
+
+executeEAreplacement' :: Int -> 
+    Int ->
+    Rand PureMT [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [(Genome Double, Int)]
+executeEAreplacement' nrGens tournSize population selectionFun evalFun crossoverFun mutationFun opps g = do
+    if nrGens > 0
+        then do
+            let nextGen = generationTotalReplacement tournSize population selectionFun evalFun crossoverFun mutationFun opps
+            executeEAreplacement' (nrGens-1) tournSize nextGen selectionFun evalFun crossoverFun mutationFun opps g 
+    else
+        evalRand population g
+

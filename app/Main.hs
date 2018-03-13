@@ -79,7 +79,8 @@ main = do
     putStrLn "************************************************** Initial genomes"
     mapM_ print pop64
     putStrLn "END OF INITIAL GENOMES **************************************************"
-    let res = executeEAreplacement 2 pop64 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus g
+    -- let res = executeEAreplacement 2 pop64 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus g
+    let res = executeEAreplacement 5 2 pop64 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus g
     print res
 
     -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
