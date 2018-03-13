@@ -356,20 +356,21 @@ executeEA k initialPop selectionFun evalFun crossoverFun mutationFun opps g =
 -- * crossover function - apply to the 2 parents resulting from mutation
 -- * mutation function - apply a mutation to the 2 parents from selection
 -- * list of opponent genomes to play against
-generationTotalReplacement :: Rand PureMT [(Genome Double, Int)] -> 
+generationTotalReplacement :: Int ->
+    Rand PureMT [(Genome Double, Int)] -> 
     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
     ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
     Crossover Double -> 
     Mutation Double ->
     [Genome Double] -> 
     Rand PureMT [(Genome Double, Int)]
-generationTotalReplacement pop selectionFun evalFun crossoverFun mutationFun opps = do
+generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps = do
     popFitnessTuple <- pop
     let count = length popFitnessTuple
     -- SELECTION parent 1 - requires genomes to be zipped with their fitness
-    parent1 <- selectionFun popFitnessTuple 4
+    parent1 <- selectionFun popFitnessTuple tournSize
     -- SELECTION parent 2 - requires genomes to be zipped with their fitness
-    parent2 <- selectionFun popFitnessTuple 4
+    parent2 <- selectionFun popFitnessTuple tournSize
     let parents = parent1:parent2:[] -- [Genome a]
     -- MUTATION
     parents <- mapM mutationFun parents
@@ -379,11 +380,11 @@ generationTotalReplacement pop selectionFun evalFun crossoverFun mutationFun opp
     newPop <- evalFun opps parents
     -- let newGen = [evalFun p opp | p <- parents, opp <- opps]
     -- (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus)
-    nextGenerationPop <- generationTotalReplacement' (count-2) pop selectionFun evalFun crossoverFun mutationFun opps
+    nextGenerationPop <- generationTotalReplacement' (count-2) (tournSize) pop selectionFun evalFun crossoverFun mutationFun opps
     return $ (popFitnessTuple ++ newPop ++ nextGenerationPop)
 
 
-generationTotalReplacement' :: Int -> 
+generationTotalReplacement' :: (Int) -> (Int) ->
     Rand PureMT [(Genome Double, Int)] -> 
     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
     ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
@@ -391,13 +392,13 @@ generationTotalReplacement' :: Int ->
     Mutation Double ->
     [Genome Double] -> 
     Rand PureMT [(Genome Double, Int)]
-generationTotalReplacement' count pop selectionFun evalFun crossoverFun mutationFun opps
+generationTotalReplacement' count tournSize pop selectionFun evalFun crossoverFun mutationFun opps
    | count >= 0 = do
         popFitnessTuple <- pop
         -- SELECTION parent 1 - requires genomes to be zipped with their fitness
-        parent1 <- selectionFun popFitnessTuple 4
+        parent1 <- selectionFun popFitnessTuple tournSize
         -- SELECTION parent 2 - requires genomes to be zipped with their fitness
-        parent2 <- selectionFun popFitnessTuple 4
+        parent2 <- selectionFun popFitnessTuple tournSize
         let parents = parent1:parent2:[] -- [Genome a]
         -- MUTATION
         parents <- mapM mutationFun parents
@@ -405,7 +406,7 @@ generationTotalReplacement' count pop selectionFun evalFun crossoverFun mutation
         parents <- doCrossovers parents crossoverFun
         -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
         newPop <- evalFun opps parents
-        nextGenerationPop <- generationTotalReplacement' (count-2) pop selectionFun evalFun crossoverFun mutationFun opps
+        nextGenerationPop <- generationTotalReplacement' (count-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps
         return $ (newPop ++ nextGenerationPop)
     | otherwise = return $ []
 
@@ -420,8 +421,9 @@ executeEAreplacement :: Int ->
     [Genome Double] -> 
     PureMT ->
     [(Genome Double, Int)]
-executeEAreplacement k initialPop selectionFun evalFun crossoverFun mutationFun opps g =
-    take k $ evalRand (generationTotalReplacement pop selectionFun evalFun crossoverFun mutationFun opps) g
+executeEAreplacement tournSize initialPop selectionFun evalFun crossoverFun mutationFun opps g =
+    -- take k $ evalRand (generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
+    evalRand (generationTotalReplacement tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
     where
         -- evaluate intitial population to a list of (genome, fitness) tuples
         pop = evalFun opps initialPop

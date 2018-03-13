@@ -53,7 +53,7 @@ main = do
 
      -- ***************************************
     -- * SET UP RANDOM POPULATION OF GENOMES TO TEST AGAINST
-    let pop64 = evalRand (randomGenomes 5 32 (0.0::Double) (1.0::Double) ) g
+    let pop64 = evalRand (randomGenomes 10 32 (0.0::Double) (1.0::Double) ) g
 
     -- let run = playnonIO 150 genOnesOnly gen1 performMoveAIalphabeta3PlyNonIO performMoveAIalphabeta3PlyNonIO (GameState initialBoard Black)
     -- play 150 genOnesOnly gen1 performMoveMinimax3Ply performMoveMinimax3Ply (GameState initialBoard Black)
@@ -61,7 +61,7 @@ main = do
     -- *************************
     -- * SET UP RANDOM OPPONENTS
     let hundredOppsMinusToPlus  =   evalRand (randomGenomes 60 32 (-1.0::Double) (1.0::Double) ) g
-    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 20 32 (0.0::Double) (1.0::Double) ) g
+    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 10 32 (0.0::Double) (1.0::Double) ) g
     let hundredOppsZerosOnly    =   evalRand (randomGenomes 60 32 (0.0::Double) (0.0::Double) ) g
     --let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
 
@@ -79,7 +79,7 @@ main = do
     putStrLn "************************************************** Initial genomes"
     mapM_ print pop64
     putStrLn "END OF INITIAL GENOMES **************************************************"
-    let res = executeEAreplacement 10 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.07) hundredOppsPlusToPlus g
+    let res = executeEAreplacement 2 pop64 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus g
     print res
 
     -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
