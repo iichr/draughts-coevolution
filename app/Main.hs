@@ -61,17 +61,25 @@ main = do
     -- *************************
     -- * SET UP RANDOM OPPONENTS
     let hundredOppsMinusToPlus  =   evalRand (randomGenomes 60 32 (-1.0::Double) (1.0::Double) ) g
-    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 60 32 (0.0::Double) (1.0::Double) ) g
+    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 20 32 (0.0::Double) (1.0::Double) ) g
     let hundredOppsZerosOnly    =   evalRand (randomGenomes 60 32 (0.0::Double) (0.0::Double) ) g
     --let evalsingletest = evalRand (mapM (\opps -> evaluate gen2 opps) hundredOpponents) g
 
 
     -- *************************
     -- * TESTS EA
+    -- putStrLn "************************************************** Initial genomes"
+    -- print hundredOppsPlusToPlus
+    -- putStrLn "END OF INITIAL GENOMES **************************************************"
+    -- let res = executeEA 40 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.07) hundredOppsPlusToPlus g
+    -- print res
+
+      -- *************************
+    -- * TESTS EA with total replacement
     putStrLn "************************************************** Initial genomes"
-    print hundredOppsPlusToPlus
+    mapM_ print pop64
     putStrLn "END OF INITIAL GENOMES **************************************************"
-    let res = executeEA 50 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.05) hundredOppsPlusToPlus g
+    let res = executeEAreplacement 10 pop64 selectionTournament myEval (uniformCrossover 0.75) (mutate 0.07) hundredOppsPlusToPlus g
     print res
 
     -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
