@@ -525,8 +525,45 @@ fun count tournSize pop selectionFun evalFun crossoverFun mutationFun opps = do
     parents <- doCrossovers parents crossoverFun
     -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
     newPop <- evalFun opps parents
-    -- let newGen = [evalFun p opp | p <- parents, opp <- opps]
-    -- (mapM (\opps -> evaluateNoCoin opps genOnesOnly) hundredOppsPlusToPlus)
     nextGen <- fun (count-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps
-    return $ newPop ++ nextGen
+    return $ foldr (:) newPop nextGen
+    --return $! newPop ++ nextGen
 
+
+funn :: Int ->
+    Rand PureMT [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    Rand PureMT [(Genome Double, Int)]
+funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps = do
+    popFitnessTuple <- pop
+    -- SELECTION parent 1 - requires genomes to be zipped with their fitness
+    parent1 <- selectionFun popFitnessTuple tournSize
+    -- SELECTION parent 2 - requires genomes to be zipped with their fitness
+    parent2 <- selectionFun popFitnessTuple tournSize
+    let parents = parent1:parent2:[] -- [Genome a]
+    -- MUTATION
+    parents <- mapM mutationFun parents
+    -- CROSSOVER
+    parents <- doCrossovers parents crossoverFun
+    -- EVALUATION (FITNESS, obtain a list of (genome,fitness) pairs
+    newPop <- evalFun opps parents
+    return $ newPop
+
+runnnEA :: Int -> Int ->
+    Rand PureMT [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [(Genome Double, Int)]
+runnnEA 0 tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = []
+runnnEA timesRun tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = 
+    newGen ++ (runnnEA (timesRun-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps g)
+    where
+        newGen = evalRand (funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g

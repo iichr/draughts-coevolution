@@ -89,18 +89,24 @@ main = do
     -- print res
 
     -- 2347 13/03 after long waiting and crash on index too large
-    let g1 = fun 10 2 pop selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
-    mapM_ print (evalRand g1 g)
-    putStrLn "************************************************** GEN1 END"
-    let g2 = fun 10 2 g1 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
-    mapM_ print (evalRand g2 g)
-    putStrLn "************************************************** GEN2 END"
-    let g3 = fun 10 2 g2 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
-    mapM_ print (evalRand g3 g)
-    putStrLn "************************************************** GEN3 END"
-    let g4 = fun 10 2 g3 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
-    mapM_ print (evalRand g4 g)
-    putStrLn "************************************************** GEN4 END"
+    -- let g1 = fun 10 2 pop selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
+    -- mapM_ print (evalRand g1 g)
+    -- putStrLn "************************************************** GEN1 END"
+    -- let g2 = fun 10 2 g1 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
+    -- mapM_ print (evalRand g2 g)
+    -- putStrLn "************************************************** GEN2 END"
+    -- let g3 = fun 10 2 g2 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
+    -- mapM_ print (evalRand g3 g)
+    -- putStrLn "************************************************** GEN3 END"
+    -- let g4 = fun 10 2 g3 selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
+    -- mapM_ print (evalRand g4 g)
+    -- putStrLn "************************************************** GEN4 END"
+
+    let g1 = runnnEA 10 2 pop selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus g
+    mapM_ print g1
+    -- let tba = funn 2 pop selectionTournament myEval (uniformCrossover 0.80) (mutate 0.07) hundredOppsPlusToPlus
+
+
 
 
     -- let testalphabetadepthlim = evalRand (alphabetadepthlim' negInf posInf 0 6 (GameState initialBoard Black) genOnesOnly getSum) g
