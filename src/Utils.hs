@@ -106,7 +106,7 @@ convertPos2Index :: Position -> Int
 convertPos2Index (row, col) = row * 8 + col
 
 listOfTuplesIndices :: [(Position, Int)]
-listOfTuplesIndices = zip allPositionsInOrder [0..32]
+listOfTuplesIndices = zip allPositionsInOrder [0..31]
         where
             allPositionsInOrder = sortBy (compare `on` fst) (evenrows ++ oddrows)
             -- even rows means odd columns 
