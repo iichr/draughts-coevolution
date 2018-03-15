@@ -255,8 +255,8 @@ evaluate gen1 gen2 = do
 evaluateNoCoin :: Genome Double -> Genome Double -> Rand PureMT Int
 evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
         where
-            maximiser = maxplayer 4
-            minimiser = minplayer 4
+            maximiser = maxplayer 1
+            minimiser = minplayer 1
             gs = GameState initialBoard Black
 
 
@@ -561,9 +561,25 @@ runnnEA :: Int -> Int ->
     Mutation Double ->
     [Genome Double] -> 
     PureMT ->
-    [(Genome Double, Int)]
-runnnEA 0 tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = []
+    Rand PureMT [(Genome Double, Int)]
+runnnEA 0 tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps
 runnnEA timesRun tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = 
-    newGen ++ (runnnEA (timesRun-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps g)
+    return $ newGen ++ evalRand (runnnEA (timesRun-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps newg) g
     where
-        newGen = evalRand (funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
+        (newGen, newg) = runRand (funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
+        --newGen = evalRand (funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
+
+-- runnnEA :: Int -> Int ->
+--     Rand PureMT [(Genome Double, Int)] -> 
+--     ([(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)) ->
+--     ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+--     Crossover Double -> 
+--     Mutation Double ->
+--     [Genome Double] -> 
+--     PureMT ->
+--     [(Genome Double, Int)]
+-- runnnEA 0 tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = []
+-- runnnEA timesRun tournSize pop selectionFun evalFun crossoverFun mutationFun opps g = 
+--     newGen ++ (runnnEA (timesRun-2) tournSize pop selectionFun evalFun crossoverFun mutationFun opps g)
+--     where
+--         newGen = evalRand (funn tournSize pop selectionFun evalFun crossoverFun mutationFun opps) g
