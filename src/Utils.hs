@@ -1,6 +1,6 @@
 module Utils where
 
-import Data.List (intersperse, concat, foldl', sortBy)
+import Data.List (intersperse, concat, foldl', sortBy, foldl1')
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
@@ -164,6 +164,39 @@ pieceVal Empty = 0.0
 oppositeOf :: Player -> Player
 oppositeOf White = Black
 oppositeOf Black = White
+
+-- ** STATISTICS **
+
+-- Mean
+-- mean :: (Floating a, Integral b) => [b]-> a
+-- mean ([]) = 0
+-- mean xs = fromIntegral (sum xs) / fromIntegral (length xs)
+
+-- Arithmetic mean
+mean :: (Floating a) => [a] -> a
+mean xs = sum xs / (fromIntegral . length) xs
+
+-- Population variance
+pvar :: (Floating a) => [a] -> a
+pvar xs = mean $ map (\x -> (x - m)^2) xs
+    where
+      m = mean xs
+
+-- Standard Deviation
+stddev :: (Floating a) => [a] -> a
+stddev xs = sqrt $ pvar xs
+
+-- Smallest element
+smallestElem :: (Integral a) => [a] -> a
+smallestElem xs = foldl1' min xs
+
+largestElem :: (Integral a) => [a] -> a 
+largestElem xs = foldl1' max xs
+
+-- ** IO FORMATTING **
+
+evalprint :: Show a => Rand PureMT [a] -> PureMT -> IO ()
+evalprint list gen = mapM_ print (evalRand list gen)
 
 
 twentyFixedRandomGenomes :: [Genome Double]
