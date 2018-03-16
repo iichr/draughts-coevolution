@@ -181,10 +181,11 @@ doCrossovers (g1:g2:gs) crossoverFun = do
     return $ g1new:g2new:gsnew
 
 
--- tournament selection
+-- Tournament selection
 -- pick two individuals uniformly at random
 -- choose the one with highest fitness
 -- do TWO times for two parents
+-- ! NEVER CALL WITH 0
 -- * population and number of times to compete as inputs
 selectionTournament :: [(Genome Double, Int)] -> Int -> Rand PureMT (Genome Double)
 selectionTournament pop k = selectionLoop pop ([],0) k 
@@ -193,13 +194,16 @@ selectionTournament pop k = selectionLoop pop ([],0) k
         selectionLoop pop chosen k
             | k > 0 = do
                 i <- getRandomR (0, (length pop)-1)
-                let ind = pop !! i
-                -- ! DUPLICATES DISCARDED - effect on evolution?
-                if snd ind <= snd chosen
-                    -- keep previously chosen genome and carry on
+                let newlySelected = pop !! i
+                -- if newlySelected is 0 and chosen is 0 or less, pick the newlySelected genome
+                if snd newlySelected == 0 && snd newlySelected >= snd chosen
+                    then selectionLoop pop newlySelected (k-1)
+                -- if newlySelected is less than previously chosen, preserve chosen
+                else if snd newlySelected <= snd chosen
                     then selectionLoop pop chosen (k-1)
-                    -- else replace current best with with the new individual
-                    else selectionLoop pop ind (k-1)
+                -- else newlySelected is better so set it as chosen for the next tournament
+                else
+                    selectionLoop pop newlySelected (k-1)
             | otherwise = return $ fst chosen
 
 
@@ -283,7 +287,7 @@ toMonadTuple ((a,b):xs) = do
    y <- b
    z <- toMonadTuple xs
    --return $ foldr (:) [(a,y+2)] z
-   return $ [(a,y)] ++ z
+   return $ (a,y):z
 
 
 -- evaluation function combining evaluateToTuple and toMonadTuple
