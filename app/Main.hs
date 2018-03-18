@@ -28,7 +28,7 @@ main = do
 
      -- ***************************************
     -- * SET UP RANDOM POPULATION OF GENOMES TO TEST AGAINST
-    let pop64 = evalRand (randomGenomes 10 32 (0.0::Double) (1.0::Double) ) g
+    let pop64 = evalRand (randomGenomes 100 32 (0.0::Double) (1.0::Double) ) g
 
     -- let run = playnonIO 150 genOnesOnly gen1 performMoveAIalphabeta3PlyNonIO performMoveAIalphabeta3PlyNonIO (GameState initialBoard Black)
     -- play 150 genOnesOnly gen1 performMoveMinimax3Ply performMoveMinimax3Ply (GameState initialBoard Black)
@@ -36,7 +36,7 @@ main = do
     -- *************************
     -- * SET UP RANDOM OPPONENTS
     let hundredOppsMinusToPlus  =   evalRand (randomGenomes 60 32 (-1.0::Double) (1.0::Double) ) g
-    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 10 32 (0.0::Double) (1.0::Double) ) g
+    let hundredOppsPlusToPlus   =   evalRand (randomGenomes 50 32 (0.0::Double) (1.0::Double) ) g
     let hundredOppsZerosOnly    =   evalRand (randomGenomes 60 32 (0.0::Double) (0.0::Double) ) g
 
 
@@ -118,8 +118,13 @@ main = do
 
     -- evalprint (run 2 2 (myEval hundredOppsPlusToPlus pop64) selectionTournament myEval (uniformCrossover 0.80) (mutation 0.10) hundredOppsPlusToPlus) g
 
-    let gs = take 100 $ executeEA 2 pop64 selection myEval (uniformCrossover 0.80) (mutation 0.10) hundredOppsPlusToPlus g
+    -- * get a file name to write output to
+    filename <- getFileName
+
+    -- * run EA writing to file
+    let gs = take 1000 $ executeEA 2 pop64 selection myEval (uniformCrossover 0.60) (mutation 0.10) hundredOppsPlusToPlus g
     let fs = mean gs
     let sts = sdAndvar gs
     let minmax = minAndmaxElems gs
-    mapM_ print $ zip5 gs [1..] fs sts minmax
+    --mapM_ print $ zip5 gs [1..] fs sts minmax
+    writeFile filename $ unlines (map show $ zip5 gs [1..] fs sts minmax)
