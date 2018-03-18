@@ -314,11 +314,18 @@ myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
 -- **** EVOLUTION GENERATION + EXECUTION ********
 -- **********************************************
 
+
+-- * Generate infinitely many populations recursively, appending them to the previous ones
+-- * using the provided 
+-- tournament size for tournament selection,
+-- function to evaluate a population (assign it fitness values)
+-- selection function (tournament selection currently)
+-- crossover function
+-- mutation function
+-- and a fixed number of opponents to evaluate against to obtain fitness values
 generations :: Int ->
     [(Genome Double, Int)] -> 
-    -- selection
     ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
-    -- eval
     ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
     Crossover Double -> 
     Mutation Double ->
@@ -333,15 +340,25 @@ generations tournSize !pop selectionFun evalFun crossoverFun mutationFun opps = 
     return $ pop : nextGens
 
 
+-- * Execute an evolutionary algorithm, runs infinitely many times producing a list of populations.
+-- * Takes an already evaluated initial population and calculates the fitness
+-- * of all its individuals. In addition provide
+-- a tournament size for tournament selection,
+-- a function to evaluate a population (assign it fitness values)
+-- a selection function (tournament selection currently)
+-- a crossover function
+-- a mutation function
+-- a fixed number of opponents to evaluate against to obtain fitness values
+-- a PureMT generator for evaluting the final population
 executeEA :: Int ->
     [Genome Double] ->
-    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) -> 
     ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) -> 
     Crossover Double ->
     Mutation Double ->
     [Genome Double] -> 
     PureMT ->
     [[(Genome Double, Int)]]
-executeEA tournSize startPop evalFun selectionFun crossoverFun mutationFun opps g =
+executeEA tournSize startPop selectionFun evalFun crossoverFun mutationFun opps g =
     let p = evalRand (evalFun opps startPop) g
     in evalRand (generations tournSize p selectionFun evalFun crossoverFun mutationFun opps) g
