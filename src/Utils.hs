@@ -118,9 +118,7 @@ listOfTuplesIndices :: [(Position, Int)]
 listOfTuplesIndices = zip allPositionsInOrder [0..31]
            
 
-positionIndicesMap = M.fromList listOfTuplesIndices
-    
-
+positionIndicesMap = M.fromList listOfTuplesIndices  
 
 -- ** MOVE AUXILIARY FUNCTIONS **
 
@@ -221,8 +219,23 @@ minAndmaxElems xs = zipWith (,) minElem maxElem
         fitnesses = map (map snd) xs
 
 
+-- ********************************
+-- *** RANDOM GENOME GENERATION ***
+-- ********************************
 
--- ** IO FORMATTING **
+randomGenomes :: (RandomGen g, Random a, Enum a) => Int -> Int -> a -> a -> Rand g [Genome a]
+randomGenomes len genomeLen from to = do
+    l <- replicateM (len*genomeLen) $ getRandomR (from,to)
+    return $ nLists genomeLen l
+    where 
+        nLists :: Int -> [a] -> [[a]]
+        nLists _ [] = []
+        nLists n ls = take n ls : nLists n (drop n ls)
+
+
+-- ********************************        
+-- ******** IO FORMATTING *********
+-- ********************************
 
 evalprint :: Show a => Rand PureMT [a] -> PureMT -> IO ()
 evalprint list gen = mapM_ print (evalRand list gen)
