@@ -1,6 +1,6 @@
 module Utils where
 
-import Data.List (intersperse, concat, foldl', sortBy, foldl1', genericLength)
+import Data.List (intersperse, concat, foldl', sortBy, foldl1', genericLength, zip5, zip6)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
@@ -224,6 +224,15 @@ minAndmaxElems xs = zipWith (,) minElem maxElem
         fitnesses = map (map snd) xs
 
 
+getEvolutionaryStats :: [Double] -> [(Double, Double)] -> [(Int,Int)] -> String
+getEvolutionaryStats _mean _sdvar _minmax = unlines $ map show $ zip6 genNumber _mean sd v smallest largest
+    where
+    genNumber = [1..] :: [Int]
+    sd = map fst _sdvar
+    v = map snd _sdvar
+    smallest = map fst _minmax
+    largest = map snd _minmax
+
 -- ********************************
 -- *** RANDOM GENOME GENERATION ***
 -- ********************************
@@ -254,8 +263,8 @@ getDateTime = do
     let (TimeOfDay hour minute second) = localTimeOfDay $ utcToLocalTime timezone now
     return $ show day ++ "-" ++ show month ++ "-" ++ show hour ++ "h" ++ show minute
 
-getFileName :: IO String 
-getFileName = ("EA-" ++) <$> (getDateTime)
+getFileName :: (IO String, IO String)
+getFileName = (("EA-" ++) <$> (getDateTime) , ("EAStats-" ++) <$> (getDateTime))
 
 
 twentyFixedRandomGenomes :: [Genome Double]
