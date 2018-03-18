@@ -16,6 +16,11 @@ import System.Random.Mersenne.Pure64
 import Control.Applicative
 import Data.Function (on)
 
+-- for date time generation
+import Data.Time.Clock
+import Data.Time.LocalTime
+import Data.Time.Calendar
+
 -- ** GENERAL GAME DATA TYPES **
 
 data Player = Black | White
@@ -234,11 +239,23 @@ randomGenomes len genomeLen from to = do
 
 
 -- ********************************        
--- ******** IO FORMATTING *********
+-- ************** IO **************
 -- ********************************
 
 evalprint :: Show a => Rand PureMT [a] -> PureMT -> IO ()
 evalprint list gen = mapM_ print (evalRand list gen)
+
+
+getDateTime :: IO String
+getDateTime = do
+    now <- getCurrentTime
+    let (year, month, day) = toGregorian $ utctDay now
+    timezone <- getCurrentTimeZone
+    let (TimeOfDay hour minute second) = localTimeOfDay $ utcToLocalTime timezone now
+    return $ show day ++ "-" ++ show month ++ "-" ++ show hour ++ "h" ++ show minute
+
+getFileName :: IO String 
+getFileName = ("EA-" ++) <$> (getDateTime)
 
 
 twentyFixedRandomGenomes :: [Genome Double]
