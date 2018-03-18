@@ -18,10 +18,12 @@ import Utils
 -- Get a square from the board given one and a position on the board
 -- if one fails we want the whole evaluation to fail
 -- hence using Maybe as a Monad (analogous to <<=)
-getSquare :: VectorBoard -> Position -> Maybe Square
-getSquare (VectorBoard b) (r,c) = do
-    row <- b V.!? r
-    row V.!? c
+getSquare :: VectorBoard -> Position -> Square
+-- getSquare (VectorBoard b) (r,c) = do
+--     row <- b V.!? r
+--     row V.!? c
+getSquare (VectorBoard b) (r,c) = V.unsafeIndex (V.unsafeIndex b r)  c
+
 
 -- replace x-th vector of the board with (the replacement of y-th element of the x-th vector with a newfigure)
 setSquare :: VectorBoard -> Square -> Position -> VectorBoard
@@ -41,26 +43,38 @@ shouldPromote White (row, _) = row == 0
 shouldPromote Black (row, _) = row == 7
 
 -- Does a given tile belong to a given player
-whoseTile :: Maybe Square -> Player -> Bool
-whoseTile (Just Empty) _ = False
-whoseTile (Just(Tile player1 _)) player2 = player1 == player2
-whoseTile Nothing _ = False
-
+whoseTile :: Square -> Player -> Bool
+whoseTile (Tile player1 _) player2 = player1 == player2
+whoseTile _ _ = False
 
 -- check whether a given position is within the range of the board and EMPTY as well
 canMoveIntoDest :: VectorBoard -> Position -> Bool
-canMoveIntoDest (VectorBoard b) dest = getSquare (VectorBoard b) dest == Just Empty &&  getSquare (VectorBoard b) dest /= Nothing
+canMoveIntoDest (VectorBoard b) (r,c)
+    | r > 7 || c > 7 || r < 0 || c < 0 = False
+    | otherwise = getSquare (VectorBoard b) (r,c) == Empty
+
+-- Check if a position is within the allowed range [(0,0), [7,7]]
+isValidPosition :: Position -> Bool
+isValidPosition (r,c)
+    | r > 7 || c > 7 || r < 0 || c < 0 = False
+    | otherwise = True
+
+isValidTupleOfPositions :: (Position, Position) -> Bool
+isValidTupleOfPositions (pos1, pos2) = isValidPosition pos1 && isValidPosition pos2
+-- all permutations VALID = [((x,y),(z,q)) | x <- [0..7], y <- [0..7], z <- [0..7], q <- [0..7]]
+-- filter (/=True) (map isValidTupleOfPositions allPermutations)
+--let inavlidPermutations = [((x,y),(z,q)) | x <- [-2..9], y <- [-2..9], z <- [-2..9], q <- [-2..9]]
 
 
 -- Get the number of figures each player has on the board, with the result in the form of (Black, White)
 figureCount :: VectorBoard -> (Int,Int)
 -- fold on current element tuple and the rest of the list, matching on it
 figureCount board = foldl' (\(b,w) r -> case r of 
-                                            Just (Tile Black _) -> (b+1,w)
-                                            Just (Tile White _) -> (b,w+1)
+                                            (Tile Black _) -> (b+1,w)
+                                            (Tile White _) -> (b,w+1)
                                             _ -> (b,w)
                             ) (0,0) sqs where
-   sqs = filter (\n -> n /= Just Empty) [getSquare board (row, col) | row <- [0..7], col <- [0..7]]
+   sqs = [getSquare board pos | pos <- allPositionsInOrder]
 
 
 -- A simple move consists of either:
@@ -68,11 +82,13 @@ figureCount board = foldl' (\(b,w) r -> case r of
 -- moving a king piece kings one square IN ANY DIAGONAL DIRECTION
 simpleMove :: VectorBoard -> Position -> [Position]
 simpleMove (VectorBoard b) orig@(row, col)
-        |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
+        |(Tile White Man) == getSquare (VectorBoard b) orig =
             filter (canMoveIntoDest (VectorBoard b)) whiteMoves
-        |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
+        |(Tile Black Man) == getSquare (VectorBoard b) orig =
             filter (canMoveIntoDest (VectorBoard b)) blackMoves
-        |Just (Tile _ King) <- getSquare (VectorBoard b) orig =
+        |(Tile Black King) == getSquare (VectorBoard b) orig =
+            filter (canMoveIntoDest (VectorBoard b)) kingMoves
+        |(Tile White King) == getSquare (VectorBoard b) orig =
             filter (canMoveIntoDest (VectorBoard b)) kingMoves
         |otherwise = []
     where
@@ -87,36 +103,36 @@ simpleMove (VectorBoard b) orig@(row, col)
 -- check whether the position to be jumped to inbetween is neither Empty nor belonging to the same player
 jump :: VectorBoard -> Position -> [(Position,Position)]
 jump (VectorBoard b) orig@(row, col)
-        |Just (Tile White Man) <- getSquare (VectorBoard b) orig =
+        |(Tile White Man) == getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- whiteZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween,
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing],
+                                notElem z [(Tile White Man), (Tile White King), Empty],
                                 let y = getSquare (VectorBoard b) dest,
-                                elem y [Just Empty]
+                                elem y [Empty]
                                 ]
 
-        |Just (Tile Black Man) <- getSquare (VectorBoard b) orig =
+        |(Tile Black Man) == getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- blackZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing],
+                                notElem z [(Tile Black Man), (Tile Black King), Empty],
                                 let y = getSquare (VectorBoard b) dest,
-                                elem y [Just Empty]
+                                elem y [Empty]
                                 ]
                                                                                                         
-        |Just (Tile White King) <- getSquare (VectorBoard b) orig =
+        |(Tile White King) == getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile White Man), Just (Tile White King), Just Empty, Nothing],
+                                notElem z [(Tile White Man), (Tile White King), Empty],
                                 let y = getSquare (VectorBoard b) dest,
-                                elem y [Just Empty]
+                                elem y [Empty]
                                 ]
 
-        |Just (Tile Black King) <- getSquare (VectorBoard b) orig =
+        |(Tile Black King) == getSquare (VectorBoard b) orig =
             [(dest,inbetween) | (dest,inbetween) <- kingZippedPath, 
                                 let z = getSquare (VectorBoard b) inbetween, 
-                                notElem z [Just (Tile Black Man), Just (Tile Black King), Just Empty, Nothing],
+                                notElem z [(Tile Black Man),(Tile Black King), Empty],
                                 let y = getSquare (VectorBoard b) dest,
-                                elem y [Just Empty]
+                                elem y [Empty]
                                 ]
                                                
         |otherwise = []
@@ -131,8 +147,8 @@ jump (VectorBoard b) orig@(row, col)
         blackJumps = [(row+2, col-2), (row+2, col+2)]
 
         -- pair jump with the position to be jumped inbetween for checking if a jump is allowed
-        whiteZippedPath = zip whiteJumps whiteInbetween
-        blackZippedPath = zip blackJumps blackInbetween
+        whiteZippedPath = filter (isValidTupleOfPositions) (zip whiteJumps whiteInbetween)
+        blackZippedPath = filter (isValidTupleOfPositions) (zip blackJumps blackInbetween)
         kingZippedPath = whiteZippedPath ++ blackZippedPath
 
 

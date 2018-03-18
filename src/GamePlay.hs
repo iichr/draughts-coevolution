@@ -80,7 +80,7 @@ performMove oldGameState@(GameState (VectorBoard b) player1) orig dest
         -- COMMON BEGIN
         player2 = oppositeOf player1
         -- get the figure at the original position
-        fig = fromJust $ getSquare (VectorBoard b) orig
+        fig = getSquare (VectorBoard b) orig
         -- remove that figure and return a board without it
         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
         -- check destination position for promotion, true if yes
@@ -118,7 +118,7 @@ performSimpleMove oldGameState@(GameState (VectorBoard b) player1) (orig, dest) 
     where
          player2 = oppositeOf player1
          -- get the figure at the original position
-         fig = fromJust $ getSquare (VectorBoard b) orig
+         fig = getSquare (VectorBoard b) orig
          -- remove that figure and return a board without it
          boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
          -- check destination position for promotion, true if yes
@@ -138,7 +138,7 @@ performJump oldGameState@(GameState (VectorBoard b) player1) (orig, inbtwn, dest
     where
         player2 = oppositeOf player1
         -- get the figure at the original position
-        fig = fromJust $ getSquare (VectorBoard b) orig
+        fig = getSquare (VectorBoard b) orig
         -- remove that figure and return a board without it
         boardFigRemovedPlayer = setSquare (VectorBoard b) Empty orig
         -- check destination position for promotion, true if yes
