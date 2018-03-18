@@ -1,6 +1,6 @@
 module Utils where
 
-import Data.List (intersperse, concat, foldl', sortBy, foldl1')
+import Data.List (intersperse, concat, foldl', sortBy, foldl1', genericLength)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
 import qualified Data.Vector as V
 import Control.Monad
@@ -105,15 +105,18 @@ instance Show GameState where
 convertPos2Index :: Position -> Int
 convertPos2Index (row, col) = row * 8 + col
 
+allPositionsInOrder :: [Position]
+allPositionsInOrder = sortBy (compare `on` fst) (evenrows ++ oddrows)
+        where
+             -- even rows means odd columns 
+             evenrows = liftA2 (,) [x| x <-[0..7], even x] [y | y <- [0..7], odd y]
+             -- odd rows means even columns
+             oddrows  = liftA2 (,) [x| x <-[0..7], odd x ] [y | y <- [0..7], even y]
+
+
 listOfTuplesIndices :: [(Position, Int)]
 listOfTuplesIndices = zip allPositionsInOrder [0..31]
-        where
-            allPositionsInOrder = sortBy (compare `on` fst) (evenrows ++ oddrows)
-            -- even rows means odd columns 
-            evenrows = liftA2 (,) [x| x <-[0..7], even x] [y | y <- [0..7], odd y]
-            -- odd rows means even columns
-            oddrows  = liftA2 (,) [x| x <-[0..7], odd x ] [y | y <- [0..7], even y]
-
+           
 
 positionIndicesMap = M.fromList listOfTuplesIndices
     
@@ -165,33 +168,59 @@ oppositeOf :: Player -> Player
 oppositeOf White = Black
 oppositeOf Black = White
 
--- ** STATISTICS **
+-- ** STATISTICS HELPERS **
 
--- Mean
--- mean :: (Floating a, Integral b) => [b]-> a
--- mean ([]) = 0
--- mean xs = fromIntegral (sum xs) / fromIntegral (length xs)
-
--- Arithmetic mean
-mean :: (Floating a) => [a] -> a
-mean xs = sum xs / (fromIntegral . length) xs
-
--- Population variance
+-- Variance
 pvar :: (Floating a) => [a] -> a
-pvar xs = mean $ map (\x -> (x - m)^2) xs
-    where
-      m = mean xs
+pvar xs = sum sqDiffs / len
+    where 
+        len = genericLength xs
+        mean = sum xs / len
+        sqDiffs = map (\n -> (n-mean)^2) xs
 
--- Standard Deviation
-stddev :: (Floating a) => [a] -> a
-stddev xs = sqrt $ pvar xs
+
+-- Standard deviation
+stdDev :: (Floating a) => [a] -> a
+stdDev xs = sqrt $ pvar xs
+
 
 -- Smallest element
 smallestElem :: (Integral a) => [a] -> a
 smallestElem xs = foldl1' min xs
 
+-- Largest element
 largestElem :: (Integral a) => [a] -> a 
 largestElem xs = foldl1' max xs
+
+-- ** STATISTICS (CALL THESE) WRAPPERS
+
+-- Mean fitness of each generation
+mean :: [[(Genome Double, Int)]] -> [Double]
+mean xs = zipWith (/) sums lengths
+    where
+        -- get the sum of the fitnesses from the tuple
+        sums = map fromIntegral (map (sum . map snd) xs)
+        -- get the length of each sublist
+        lengths = map genericLength xs
+
+
+-- Standard Deviation and Population Variance as a tuple for each generation
+sdAndvar :: [[(Genome Double, Int)]] -> [(Double, Double)]
+sdAndvar xs = zipWith (,) sd variance 
+    where
+        sd = map stdDev fitnesses
+        variance = map pvar fitnesses
+        fitnesses = map (map fromIntegral) (map (map snd) xs)
+
+-- Returns the smallest and largest elements from each generation       
+minAndmaxElems :: [[(Genome Double, Int)]] -> [(Int, Int)]
+minAndmaxElems xs = zipWith (,) minElem maxElem
+    where
+        minElem = map smallestElem fitnesses
+        maxElem = map largestElem fitnesses
+        fitnesses = map (map snd) xs
+
+
 
 -- ** IO FORMATTING **
 
