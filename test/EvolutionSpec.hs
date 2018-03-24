@@ -84,6 +84,19 @@ spec = do
             let tournamentZeros5size = evalRand (selectionTournament zeroFitnessGenomes 10) g
             tournamentZeros5size `shouldNotBe` []
 
+    describe "randomNopponents" $ do
+        it "should return the given number of randomly selected opponents from a population" $ do
+            g <- newPureMT
+            let numberofGenomes = 60
+            let genomeLength = 32
+            let genomes60  = evalRand (randomGenomes numberofGenomes genomeLength (0.0::Double) (1.0::Double)) g
+            let randomOpps20 = evalRand (randomNopponents 20 genomes60) g
+            let randomOpps0 = evalRand (randomNopponents 0 genomes60) g
+            let randomOpps40 = evalRand (randomNopponents 40 genomes60) g
+            let randomOpps10 = evalRand (randomNopponents 10 genomes60) g
+            map length [randomOpps20, randomOpps0, randomOpps40, randomOpps10] `shouldBe` [20,0,40,10]
+            -- length randomOpps20 `shouldBe` 20
+
 
     -- TODO implement the following tests from main as specs:
     -- -- ************************
