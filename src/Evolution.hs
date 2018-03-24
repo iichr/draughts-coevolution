@@ -165,9 +165,11 @@ evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
             gs = GameState initialBoard Black
 
 
+-- Play each genome against 20 randomly selected opponents
 evaluateNoCoinAgainstMultiple :: [Genome Double] -> Genome Double -> Rand PureMT Int
-evaluateNoCoinAgainstMultiple opps gen1 = do 
-    allresults <- mapM (\op -> evaluateNoCoin op gen1) opps
+evaluateNoCoinAgainstMultiple opps gen1 = do
+    opps20random <- randomNopponents 20 opps 
+    allresults <- mapM (\op -> evaluateNoCoin op gen1) opps20random
     -- filter just white wins as gen1 is White
     return $ length $ filter (==(-1)) allresults
 
