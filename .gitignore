@@ -11,3 +11,5 @@
 /.cabal-sandbox/
 TAGS
 cabal-dev/
+EA*
+EAStats*
