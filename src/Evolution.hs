@@ -156,7 +156,9 @@ evaluate gen1 gen2 = do
         -- minusones = length (filter (==(-1)) singleGenomeScores)
         -- draws = length (filter (==(0)) singleGenomeScores)
 
-
+-- Get the outcome of playing a game for up to 150 moves given two genomes: 
+-- gen1 the maximiser (Black),
+-- gen2 the minimiser (White)
 evaluateNoCoin :: Genome Double -> Genome Double -> Rand PureMT Int
 evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
         where
@@ -165,13 +167,22 @@ evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
             gs = GameState initialBoard Black
 
 
--- Play each genome against 20 randomly selected opponents
+-- Play a White genome against 20 randomly selected Black opponents
 evaluateNoCoinAgainstMultiple :: [Genome Double] -> Genome Double -> Rand PureMT Int
-evaluateNoCoinAgainstMultiple opps gen1 = do
-    opps20random <- randomNopponents 20 opps 
-    allresults <- mapM (\op -> evaluateNoCoin op gen1) opps20random
-    -- filter just white wins as gen1 is White
+evaluateNoCoinAgainstMultiple blackopps whitegen = do
+    opps20randomBlack <- randomNopponents 20 blackopps 
+    allresults <- mapM (\blackop -> evaluateNoCoin blackop whitegen) opps20randomBlack
+    -- filter just white wins as whitegen is White
     return $ length $ filter (==(-1)) allresults
+
+
+-- Play a Black genome against 20 randomly selected White opponents
+evaluateNoCoinAgainstMultipleBlack :: [Genome Double] -> Genome Double -> Rand PureMT Int
+evaluateNoCoinAgainstMultipleBlack whiteopps blackgen = do
+    opps20randomWhite <- randomNopponents 20 whiteopps
+    allresults <- mapM (\whiteop -> evaluateNoCoin blackgen whiteop) opps20randomWhite
+    -- filter just black wins
+    return $ length $ filter (==(1)) allresults
 
 
 -- Given a list of genomes and a list of genome opponents evaluate each genome against all of the opponents
@@ -183,6 +194,24 @@ evaluateToTuple opps gen1s = do
     map ((,) gen1) [evalscore]
 
 
+-- Given a player and two lists of genomes ordered Black White
+-- evaluate each genome against all of the opponents of the specified player and return the number of wins (-1.0s / 1.0s) against them
+evaluateToTupleCoEv  :: Player -> [Genome Double] -> [Genome Double] -> [(Genome Double,  Rand PureMT Int)]
+evaluateToTupleCoEv player1 blackgenomes whitegenomes = do
+    if player1 == Black
+        then do
+            -- each black against all of the opposing white genomes
+            b <- blackgenomes
+            -- we are evaluating against White opponents
+            let evalscore = evaluateNoCoinAgainstMultipleBlack whitegenomes b
+            map ((,) b) [evalscore]
+    else do
+        -- each white against all of the opposing black genomes
+        w <- whitegenomes
+        let evalscore = evaluateNoCoinAgainstMultiple blackgenomes w
+        map ((,) w) [evalscore]
+
+
 -- Unpacking a tuple within a monad to a monadic tuple   
 toMonadTuple :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
 toMonadTuple [] = return $ []
@@ -191,7 +220,6 @@ toMonadTuple ((a,b):xs) = do
    z <- toMonadTuple xs
    --return $ foldr (:) [(a,y+2)] z
    return $ (a,y):z
-
 
 test = do
     -- evalRand returns value ONLY
@@ -311,6 +339,10 @@ selection pop k = select' []
 myEval :: [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
 myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
 
+
+-- * EVALUATION function for CO-EVOLUTION combining evaluateToTuple and toMonadTuple
+myEvalCoEv :: Player -> [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
+myEvalCoEv player1 blackgenomes whitegenomes = toMonadTuple $ evaluateToTupleCoEv player1 blackgenomes whitegenomes
 
 -- **********************************************
 -- **** EVOLUTION GENERATION + EXECUTION ********
