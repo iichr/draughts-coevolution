@@ -250,8 +250,9 @@ randomGenomes len genomeLen from to = do
 -- Randomly return a list of N opponents chosen from a given list of genomes
 randomNopponents :: Int -> [Genome Double] -> Rand PureMT [Genome Double] 
 randomNopponents n population = do
-    let poplen = length population
-    (map (population!!)) <$> (replicateM n $ getRandomR(0::Int,poplen))
+    -- mind the potential for an off by 1 error
+    let maxIndex = length population - 1
+    (map (population!!)) <$> (replicateM n $ getRandomR(0::Int,maxIndex))
 
 
 -- ********************************        
@@ -271,7 +272,7 @@ getDateTime = do
     return $ show day ++ "-" ++ show month ++ "-" ++ show hour ++ "h" ++ show minute
 
 getFileName :: (IO String, IO String)
-getFileName = (("EA-" ++) <$> (getDateTime) , ("EAStats-" ++) <$> (getDateTime))
+getFileName = (("COEA-" ++) <$> (getDateTime) , ("COEAStats-" ++) <$> (getDateTime))
 
 getApopulationFromFile :: String -> IO [Genome Double]
 getApopulationFromFile file = do
