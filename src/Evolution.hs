@@ -195,7 +195,7 @@ evaluateToTuple opps gen1s = do
 
 
 -- Given a player and two lists of genomes ordered Black White
--- evaluate each genome against all of the opponents of the specified player and return the number of wins (-1.0s / 1.0s) against them
+-- evaluate each genome against 20 randomly selected opponents of the specified player and return the number of wins (-1.0s / 1.0s) against them
 evaluateToTupleCoEv  :: Player -> [Genome Double] -> [Genome Double] -> [(Genome Double,  Rand PureMT Int)]
 evaluateToTupleCoEv player1 blackgenomes whitegenomes = do
     if player1 == Black
