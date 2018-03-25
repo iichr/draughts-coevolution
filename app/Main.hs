@@ -158,14 +158,14 @@ main = do
 
     -- * run EA
 
-    let populationSize = 100
+    let populationSize = 30
     let oppsSize = 100
-    let numGenerations = 100
+    let numGenerations = 10
 
-    initialPopulation <- getApopulationFromFile "100pop.txt"
+    -- initialPopulation <- getApopulationFromFile "100pop.txt"
     opponents <- getApopulationFromFile "100opps.txt"
 
-    -- let initialPopulation = evalRand (randomGenomes populationSize 32 (0.0::Double) (1.0::Double) ) g
+    let initialPopulation = evalRand (randomGenomes populationSize 32 (0.0::Double) (1.0::Double) ) g
     -- let opponents         = evalRand (randomGenomes oppsSize 32 (0.0::Double) (1.0::Double) ) g
 
 
@@ -177,10 +177,23 @@ main = do
     -- print opponents
     -- print "******* END OPPONENTS"
 
-    print "RANDOM"
+    -- print "RANDOM"
     
+    -- * EVOLUTION
+    -- let result = take numGenerations $ executeEA 4 initialPopulation selection myEval (uniformCrossover 0.60) (mutation 0.15) opponents g
+    -- let fs = mean result
+    -- let sts = sdAndvar result
+    -- let minmax = minAndmaxElems result
+    -- let evStats = getEvolutionaryStats fs sts minmax
+    -- print evStats
+    -- -- * Write stats to stat file
+    -- writeFile statsFileName evStats
+    -- --mapM_ print $ zip5 gs [1..] fs sts minmax
+    -- -- * Write population and stats to separate file
+    -- writeFile filename $ unlines (map show $ zip5 result [1..] fs sts minmax)
 
-    let result = take numGenerations $ executeEA 4 initialPopulation selection myEval (uniformCrossover 0.60) (mutation 0.15) opponents g
+    -- * COEVOLUTION
+    let result = take numGenerations $ executeCOEA 3 initialPopulation selection myEvalCoEv (uniformCrossover 0.70) (mutation 0.15) opponents g
     let fs = mean result
     let sts = sdAndvar result
     let minmax = minAndmaxElems result
@@ -188,7 +201,8 @@ main = do
     print evStats
     -- * Write stats to stat file
     writeFile statsFileName evStats
-    --mapM_ print $ zip5 gs [1..] fs sts minmax
     -- * Write population and stats to separate file
     writeFile filename $ unlines (map show $ zip5 result [1..] fs sts minmax)
-
+    
+    finalDateTimeStamp <- ("Finished at: " ++) <$> getDateTime
+    print finalDateTimeStamp
