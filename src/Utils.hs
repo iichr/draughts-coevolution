@@ -224,14 +224,17 @@ minAndmaxElems xs = zipWith (,) minElem maxElem
         fitnesses = map (map snd) xs
 
 
+-- Produce a comma-separated string with statistics about each generation containing the following:
+-- the generation number, the mean, the standrd deviation, the maximum fitness value, the minimum fitness value
 getEvolutionaryStats :: [Double] -> [(Double, Double)] -> [(Int,Int)] -> String
-getEvolutionaryStats _mean _sdvar _minmax = unlines $ map show $ zip6 genNumber _mean sd v smallest largest
-    where
-    genNumber = [1..] :: [Int]
-    sd = map fst _sdvar
-    v = map snd _sdvar
-    smallest = map fst _minmax
-    largest = map snd _minmax
+getEvolutionaryStats _mean _sdvar _minmax = 
+    let genNumber = [1..] :: [Int]
+        sd = map fst _sdvar
+        smallest = map fst _minmax
+        largest = map snd _minmax
+        commaSeparated (x,y,z,u,s) = 
+            show x ++ "," ++ show y ++ "," ++ show z ++ "," ++ show u ++ "," ++ show s
+    in unlines $ map commaSeparated $ zip5 genNumber _mean sd smallest largest
 
 -- ********************************
 -- *** RANDOM GENOME GENERATION ***
@@ -272,7 +275,7 @@ getDateTime = do
     return $ show day ++ "-" ++ show month ++ "-" ++ show hour ++ "h" ++ show minute
 
 getFileName :: (IO String, IO String)
-getFileName = (("COEA-" ++) <$> (getDateTime) , ("COEAStats-" ++) <$> (getDateTime))
+getFileName = ((++"COEA.csv") <$> (getDateTime) , (++"COEAStats.csv") <$> (getDateTime))
 
 getApopulationFromFile :: String -> IO [Genome Double]
 getApopulationFromFile file = do
