@@ -341,6 +341,8 @@ myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
 
 
 -- * EVALUATION function for CO-EVOLUTION combining evaluateToTuple and toMonadTuple
+-- If player1 == Black: evaluate each black against all white using evaluateNoCoinAgainstMultipleBlack opps b, 1
+-- else : evaluate each white against all black using evaluateNoCoinAgainstMultiple opps w, -1
 myEvalCoEv :: Player -> [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
 myEvalCoEv player1 blackgenomes whitegenomes = toMonadTuple $ evaluateToTupleCoEv player1 blackgenomes whitegenomes
 
@@ -378,8 +380,8 @@ generations tournSize !pop selectionFun evalFun crossoverFun mutationFun opps = 
 -- * Takes an already evaluated initial population and calculates the fitness
 -- * of all its individuals. In addition provide
 -- a tournament size for tournament selection,
--- a function to evaluate a population (assign it fitness values)
 -- a selection function (tournament selection currently)
+-- a function to evaluate a population (assign it fitness values)
 -- a crossover function
 -- a mutation function
 -- a fixed number of opponents to evaluate against to obtain fitness values
@@ -396,3 +398,55 @@ executeEA :: Int ->
 executeEA tournSize startPop selectionFun evalFun crossoverFun mutationFun opps g =
     let p = evalRand (evalFun opps startPop) g
     in evalRand (generations tournSize p selectionFun evalFun crossoverFun mutationFun opps) g
+
+-- *****************
+-- * Co-Evolution **
+-- *****************
+
+-- * pop is White, opps are Black
+-- * Generate infinitely many populations recursively, appending them to the previous ones
+-- * using the provided
+-- tournament size for tournament selection,
+-- selection function (tournament selection currently)
+-- function to evaluate a population (assign it fitness values) - player to evaluate, black, white in order
+-- crossover function
+-- mutation function
+-- and a fixed number of opponents to evaluate against to obtain fitness values
+generationsCOEA :: Int ->
+    [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
+    (Player -> [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [(Genome Double, Int)] -> 
+    Rand PureMT [[(Genome Double, Int)]]
+generationsCOEA tournSize !pop selectionFun evalFunCOEA crossoverFun mutationFun !opps = do
+    newPopWhite <- selectionFun pop tournSize
+    newOppsBlack <- selectionFun opps tournSize
+
+    newPopWhite  <- doCrossovers newPopWhite crossoverFun
+    newOppsBlack <- doCrossovers newOppsBlack crossoverFun
+
+    newPopWhite <- mapM mutationFun newPopWhite
+    newOppsBlack <- mapM mutationFun newOppsBlack
+
+    zippednewPopWhite <- evalFunCOEA White newOppsBlack newPopWhite
+    zippednewOppsBlack <- evalFunCOEA Black newOppsBlack newPopWhite
+
+    nextGens <- generationsCOEA tournSize zippednewPopWhite selectionFun evalFunCOEA crossoverFun mutationFun zippednewOppsBlack
+    return $ pop : opps : nextGens
+
+
+executeCOEA :: Int ->
+    [Genome Double] ->
+    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
+    (Player -> [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) -> 
+    Crossover Double ->
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [[(Genome Double, Int)]]
+executeCOEA tournSize startPop selectionFun evalFunCOEA crossoverFun mutationFun startOpps g =
+    let pop = evalRand (evalFunCOEA White startOpps startPop) g
+        opps = evalRand (evalFunCOEA Black startOpps startPop) g
+    in evalRand (generationsCOEA tournSize pop selectionFun evalFunCOEA crossoverFun mutationFun opps) g

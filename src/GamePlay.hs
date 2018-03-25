@@ -242,6 +242,9 @@ playnonIOMonadicSecond counter gen1 gen2 ai1 ai2 ms = do
             playnonIO' counter gen1 gen2 ai1 ai2 gs
 
 
+-- Play a game until won or draw using a counter of maximum moves, two genomes, one per player and move select functions, which given a genome and a game state produce the next game state
+-- ai1 gen1 correspond to the Black player
+-- ai2 gen2 correspond to the White player
 playnonIO' :: Enum a => Int -> Genome a -> Genome a -> (Genome a -> GameState ->  Rand PureMT GameState) -> (Genome a -> GameState ->  Rand PureMT GameState) -> GameState -> Rand PureMT Int
 playnonIO' counter gen1 gen2 ai1 ai2 gs@(GameState (VectorBoard b) player1)
         | whoWon gs == Just Black = getRandomR(1,1)
