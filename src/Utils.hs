@@ -282,3 +282,8 @@ getApopulationFromFile file = do
     contents <- readFile file
     let pop = (read contents)::[Genome Double]
     return pop
+
+writePopulationToFile :: String -> [Genome Double] -> IO()
+writePopulationToFile file population = do
+    writeFile file (show population)
+    print $ "Population written to file: " ++ file 
