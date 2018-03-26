@@ -158,15 +158,17 @@ main = do
 
     -- * run EA
 
-    let populationSize = 30
+    let populationSize = 50
     let oppsSize = 100
     let numGenerations = 10
 
-    -- initialPopulation <- getApopulationFromFile "100pop.txt"
-    opponents <- getApopulationFromFile "100opps.txt"
+    initialPopulation <- getApopulationFromFile "50popsminusplus.txt"
+    -- opponents <- getApopulationFromFile "100opps.txt"
 
-    let initialPopulation = evalRand (randomGenomes populationSize 32 (0.0::Double) (1.0::Double) ) g
-    -- let opponents         = evalRand (randomGenomes oppsSize 32 (0.0::Double) (1.0::Double) ) g
+    -- let initialPopulation = evalRand (randomGenomes populationSize 32 (-1.0::Double) (1.0::Double) ) g
+    let opponents         = evalRand (randomGenomes oppsSize 32 (-1.0::Double) (1.0::Double) ) g
+
+    -- writePopulationToFile "50popsminusplus.txt" initialPopulation
 
 
     -- print "******* INITIAL POPULATION"

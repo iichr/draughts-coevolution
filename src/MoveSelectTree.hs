@@ -77,14 +77,17 @@ alphabetadepthlimneg' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> maxValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
-    let res = zipWith (+) allStatesEvaluated l
+    -- l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
+    -- let res = zipWith (+) allStatesEvaluated l
+    let res = allStatesEvaluated
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
     -- up to here the return type is Rand PureMT [(Double, GameState)]
-    let b = minimumBy (comparing fst) tupleEvalState
-    -- up to here the return type is Rand PureMT (Double, GameState)
-    return $ snd b
+    randomWithProbability 0.5 tupleEvalState $ minimumBy (comparing fst)
+    -- * OLD DETERMINISTC
+    -- let b = minimumBy (comparing fst) tupleEvalState
+    -- -- up to here the return type is Rand PureMT (Double, GameState)
+    -- return $ snd b
 
 
 alphabetadepthlim' :: Double -> Double -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> Double) -> Rand PureMT GameState
@@ -94,15 +97,42 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     -- generate random numbers the length of that list and sum them with the respective state to ensure diversity
     -- zip evaluation and state together
     let allStatesEvaluated = join $ [map (\s -> minValue' alpha beta depth limit s genome evaluator) (getSuccessiveStates state)]
-    l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
-    let res = zipWith (+) allStatesEvaluated l
+    --l <- replicateM (length $ allStatesEvaluated) $ getRandomR ((0.0)::Double,(0.0))
+    -- let res = zipWith (+) allStatesEvaluated l
+    let res = allStatesEvaluated
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
     -- up to here the return type is Rand PureMT [(Double, GameState)]
-    let b = maximumBy (comparing fst) tupleEvalState
-    -- up to here the return type is Rand PureMT (Double, GameState)
-    return $ snd b
+    randomWithProbability 0.5 tupleEvalState $ maximumBy (comparing fst)
+    -- * OLD DETERMINISTIC
+    -- let b = maximumBy (comparing fst) tupleEvalState
+    -- -- up to here the return type is Rand PureMT (Double, GameState)
+    -- return $ snd b
    
+ 
+-- * Choose a random move based on some probability p supplied.
+-- * It takes three arguments: the probability p, a list of states and their evaluations, 
+-- * a function that returns a gameState based on some criteria - maximumBy or minimumBy depending on the player
+-- This latter function is only used when a non-random move is needed - standard deterministic behaviour
+-- * Hinweis: set p to 0.0 to effectively choose a move deterministically
+randomWithProbability :: Double -> [(Double, GameState)] -> ([(Double, GameState)] -> (Double, GameState)) -> Rand PureMT GameState
+randomWithProbability p evalStateTuple deterministicMovePick = do
+    -- get a random number in the range of 0.0 to 1.0
+    t <- getRandomR (0.0, 1.0)
+    -- with probability p pick a random state
+    -- chance of t being less than p is p therefore the bigger the p, the higher the probability 
+    -- the randomly chosen element t will be less than it
+    -- evalStateTuple <- evalStateTup
+    if t < p
+        then do
+            let maxIndex = (length evalStateTuple) - 1
+            index <- getRandomR (0, maxIndex)
+            let chosenTuple = evalStateTuple !! index
+            return $ snd chosenTuple
+        else do
+            let chosenTup = deterministicMovePick evalStateTuple
+            return $ snd chosenTup
+
 
 -- *********************************************
 -- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
