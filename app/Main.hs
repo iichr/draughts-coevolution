@@ -160,28 +160,31 @@ main = do
 
     let populationSize = 150 :: Int
     let oppsSize = 150 :: Int
-    let numGenerations = 200 :: Int
+    let numGenerations = 300 :: Int
 
-    let crossoverRate = 0.70 :: Double
-    let mutationRate = 0.1 :: Double
+    let crossoverRate = 0.75 :: Double
+    let mutationRate = 0.2 :: Double
+    let tournamentSize = 5 :: Int
+
     print $ "Pop size: " ++ show populationSize
     print $ "Opps size: " ++  show oppsSize
     print $ "Generations: " ++  show numGenerations
     print $ "Crossover rate: " ++  show crossoverRate
     print $ "Mutation rate: " ++  show mutationRate
+    print $ "Tournament size: " ++  show tournamentSize
     print "Evaluated against how many randomly selected: 30 "
     print "Randomness limneg': 0.2 "
     print "Randomness lim': 0.5"
 
 
-    -- initialPopulation <- getApopulationFromFile "50popsminusplus.txt"
-    -- opponents <- getApopulationFromFile "100opps.txt"
+    -- initialPopulation <- getApopulationFromFile "150popFIRST.txt"
+    -- opponents <- getApopulationFromFile "150oppsFIRST.txt"
 
     let initialPopulation = evalRand (randomGenomes populationSize 32 (-1.0::Double) (1.0::Double) ) g
     let opponents         = evalRand (randomGenomes oppsSize 32 (-1.0::Double) (1.0::Double) ) g
 
-    writePopulationToFile "150popFIRST.txt" initialPopulation
-    writePopulationToFile "150oppsFIRST.txt" opponents
+    -- writePopulationToFile "150popSECOND.txt" initialPopulation
+    -- writePopulationToFile "150oppsSECOND.txt" opponents
 
 
     -- print "******* INITIAL POPULATION"
@@ -208,7 +211,7 @@ main = do
     -- writeFile filename $ unlines (map show $ zip5 result [1..] fs sts minmax)
 
     -- * COEVOLUTION
-    let result = take numGenerations $ executeCOEA 4 initialPopulation selection myEvalCoEv (uniformCrossover crossoverRate) (mutation mutationRate) opponents g
+    let result = take numGenerations $ executeCOEA tournamentSize initialPopulation selection myEvalCoEv (uniformCrossover crossoverRate) (mutation mutationRate) opponents g
     let fs = mean result
     let sts = sdAndvar result
     let minmax = minAndmaxElems result
