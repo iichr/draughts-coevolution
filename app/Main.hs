@@ -173,8 +173,8 @@ main = do
     print $ "Mutation rate: " ++  show mutationRate
     print $ "Tournament size: " ++  show tournamentSize
     print "Evaluated against how many randomly selected: 30 "
-    print "Randomness limneg': 0.2 "
-    print "Randomness lim': 0.5"
+    print "Randomness limneg': 0 "
+    print "Randomness lim': 0"
 
 
     -- initialPopulation <- getApopulationFromFile "150popFIRST.txt"
