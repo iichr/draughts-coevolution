@@ -160,7 +160,7 @@ main = do
 
     let populationSize = 150 :: Int
     let oppsSize = 150 :: Int
-    let numGenerations = 300 :: Int
+    let numGenerations = 400 :: Int
 
     let crossoverRate = 0.75 :: Double
     let mutationRate = 0.2 :: Double
@@ -172,7 +172,7 @@ main = do
     print $ "Crossover rate: " ++  show crossoverRate
     print $ "Mutation rate: " ++  show mutationRate
     print $ "Tournament size: " ++  show tournamentSize
-    print "Evaluated against how many randomly selected: 30 "
+    print "Evaluated against how many randomly selected: 15 "
     print "Randomness limneg': 0 "
     print "Randomness lim': 0"
 
