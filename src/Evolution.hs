@@ -170,7 +170,7 @@ evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
 -- Play a White genome against 15 randomly selected Black opponents
 evaluateNoCoinAgainstMultiple :: [Genome Double] -> Genome Double -> Rand PureMT Int
 evaluateNoCoinAgainstMultiple blackopps whitegen = do
-    opps20randomBlack <- randomNopponents 15 blackopps 
+    opps20randomBlack <- randomNopponents 25 blackopps 
     allresults <- mapM (\blackop -> evaluateNoCoin blackop whitegen) opps20randomBlack
     -- filter just white wins as whitegen is White
     return $ length $ filter (==(-1)) allresults
@@ -179,7 +179,7 @@ evaluateNoCoinAgainstMultiple blackopps whitegen = do
 -- Play a Black genome against 15 randomly selected White opponents
 evaluateNoCoinAgainstMultipleBlack :: [Genome Double] -> Genome Double -> Rand PureMT Int
 evaluateNoCoinAgainstMultipleBlack whiteopps blackgen = do
-    opps20randomWhite <- randomNopponents 15 whiteopps
+    opps20randomWhite <- randomNopponents 25 whiteopps
     allresults <- mapM (\whiteop -> evaluateNoCoin blackgen whiteop) opps20randomWhite
     -- filter just black wins
     return $ length $ filter (==(1)) allresults

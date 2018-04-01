@@ -83,7 +83,7 @@ alphabetadepthlimneg' alpha beta depth limit state genome evaluator = do
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
     -- up to here the return type is Rand PureMT [(Double, GameState)]
-    randomWithProbability 0.7 tupleEvalState $ minimumBy (comparing fst)
+    randomWithProbability 0.2 tupleEvalState $ minimumBy (comparing fst)
     -- * OLD DETERMINISTC
     -- let b = minimumBy (comparing fst) tupleEvalState
     -- -- up to here the return type is Rand PureMT (Double, GameState)
@@ -103,7 +103,7 @@ alphabetadepthlim' alpha beta depth limit state genome evaluator = do
     --let b = map ((,) r) (getSuccessiveStates state)
     let tupleEvalState = zip res (getSuccessiveStates state)
     -- up to here the return type is Rand PureMT [(Double, GameState)]
-    randomWithProbability 0.7 tupleEvalState $ maximumBy (comparing fst)
+    randomWithProbability 0.2 tupleEvalState $ maximumBy (comparing fst)
     -- * OLD DETERMINISTIC
     -- let b = maximumBy (comparing fst) tupleEvalState
     -- -- up to here the return type is Rand PureMT (Double, GameState)

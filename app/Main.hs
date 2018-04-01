@@ -172,9 +172,9 @@ main = do
     print $ "Crossover rate: " ++  show crossoverRate
     print $ "Mutation rate: " ++  show mutationRate
     print $ "Tournament size: " ++  show tournamentSize
-    print "Evaluated against how many randomly selected: 15 "
-    print "Randomness limneg': 0.7 "
-    print "Randomness lim': 0.7"
+    print "Evaluated against how many randomly selected: 25 "
+    print "Randomness limneg': 0.2"
+    print "Randomness lim': 0.2"
 
 
     -- initialPopulation <- getApopulationFromFile "150popFIRST.txt"
