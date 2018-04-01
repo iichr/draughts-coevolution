@@ -1,8 +1,10 @@
 import argparse
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import splrep, splev
 import itertools
+import glob
 
 
 ap = argparse.ArgumentParser()
@@ -11,6 +13,14 @@ args = vars(ap.parse_args())
 
 filepath = args["p"]
 print("The path containing the co-evolutionary stat .csv files is {}".format(filepath))
+
+def begin(fpath):
+    for file in glob.glob(os.path.join(fpath, '*.csv')):
+        print(file)
+        parse_data(file)
+    plt.ylim(0,15)
+    plt.xlabel('generation')
+    plt.savefig("test1.svg")
 
 def parse_data(file):
     with open(file,"rb") as f_in:
@@ -26,8 +36,8 @@ def parse_data(file):
         for i,element in enumerate(opponents,1):
             element[0] = i
 
-        print(population)
-        print(opponents)
+        # print(population)
+        # print(opponents)
 
         pop_X = population['gen']
         opp_X = opponents['gen']
@@ -50,17 +60,24 @@ def parse_data(file):
 
         # plotting
 
+        # MEAN VALUES
         # x coords - same for both populations
         xnew = np.linspace(pop_X[0],pop_X[-1])
         # define the curve, y = f(x)
         tck_pop_mean = splrep(pop_X,pop_mean,s=3)
          # splev - array of points to return the value AT; the spline
         y_pop_mean = splev(xnew,tck_pop_mean)
-        plt.plot(xnew,y_pop_mean)
+        plt.plot(xnew,y_pop_mean, 'r-', label='pop')
 
         tck_opp_mean = splrep(opp_X,opp_mean,s=3)
         y_opp_mean = splev(xnew, tck_opp_mean)
-        plt.plot(xnew, y_opp_mean)
+        plt.plot(xnew, y_opp_mean, 'g--', label='opp')
 
+        # STANDARD DEVIATIONS
+        tck_pop_sd = splrep(pop_X,pop_sd,s=1)
+        y_pop_sd = splev(xnew,tck_pop_sd)
+        plt.plot(xnew, y_pop_sd, 'b-.')
 
-        plt.savefig("test1.png")
+        tck_opp_sd = splrep(opp_X,opp_sd,s=1)
+        y_opp_sd = splev(xnew,tck_opp_sd)
+        plt.plot(xnew, y_opp_sd, 'y-.')
