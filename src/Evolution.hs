@@ -311,7 +311,8 @@ mutation p genome = do
     if t < p
         then do
             nrElems <- getRandomR (0, length genome -1)
-            return ((take nrElems genome) ++ t:(drop (nrElems+1) genome))
+            k <- getRandomR(-1.0, 0.0)
+            return ((take nrElems genome) ++ k:(drop (nrElems+1) genome))
         else
             return genome
 
