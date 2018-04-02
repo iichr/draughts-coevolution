@@ -18,9 +18,9 @@ import MoveSelectTree
 import Data.Functor.Identity
 import qualified Data.Map.Strict as M
 
-
 -- ***************************************************
 -- *** NON-IO PLAYERS, use with PLAYNONIO function ***
+-- ******** USAGE IN EVOLUTIONARY ALGORITHMS *********
 -- ********** SUPPLY PLY AS ARGUMENT *****************
 -- ***************************************************
 
@@ -112,50 +112,11 @@ getSimpleSum genome gs= foldl' (+) 0.0 $ getVectortoSum gs genome
 -- ********** EVALUATION (FITNESS) FUNCTION *************
 -- ******************************************************
 
+-- Toss a coin
 coin :: RandomGen g => Rand g Int
-coin = getRandomR (0,1)
+coin = getRandomR (0,1)  
 
-
--- EVALUATION (fitness)
--- given a population of genomes P
--- generate 100 fixed oponents, keep them
--- play EACH individual from p
--- count how many times each individual won
--- zip that with the genome in the form of (genome, number of wins)
--- at the end map to obtain a list of [(genome, number of wins)]
-evaluate :: Genome Double -> Genome Double -> Rand PureMT Int
-evaluate gen1 gen2 = do
-    toss <- coin
-    -- one is maximising i.e Black first position
-    let maximiser = maxplayer 4 
-    -- two is minimising i.e second position always
-    let minimiser = minplayer 4
-
-    let gs = (GameState initialBoard Black)
-    let singleGenomeScores = if (toss == 0)
-        then
-            -- black is gen1 + maximising moves
-            -- white is gen2 + minimising moves
-            playnonIO' 150 gen1 gen2 maximiser minimiser gs
-        else
-            -- black is gen2 + maximising
-            -- white is gen1 + minimising
-            playnonIO' 150 gen2 gen1 maximiser minimiser gs 
-    --let ones = length (filter (==(1)) singleGenomeScores)
-    --let minusones = length (filter (==(-1)) singleGenomeScores)
-    --let draws = length (filter (==(0)) singleGenomeScores)
-    --return $ (genome, singleGenomeScores)
-    singleGenomeScores         
-
-    -- where
-    --     singleGenomeScores = [score | o <- opponents, let score = playnonIO 150 o genome ai ai gs]
-    --     ai = performMoveAIalphabeta4PlyNonIO
-    --     gs = (GameState initialBoard Black)
-        
-        -- ones = length (filter (==(1)) singleGenomeScores)
-        -- minusones = length (filter (==(-1)) singleGenomeScores)
-        -- draws = length (filter (==(0)) singleGenomeScores)
-
+-- DETERMINISTIC
 -- Get the outcome of playing a game for up to 150 moves given two genomes: 
 -- gen1 the maximiser (Black),
 -- gen2 the minimiser (White)
@@ -174,17 +135,6 @@ evaluateNoCoinAgainstMultiple blackopps whitegen = do
     allresults <- mapM (\blackop -> evaluateNoCoin blackop whitegen) opps20randomBlack
     -- filter just white wins as whitegen is White
     return $ length $ filter (==(-1)) allresults
-
-
--- Evaluation function for the final results, comparing two populations.
--- Evolved White players are evaluated against a randomly chosen subset k of deterministically evolved Black players
--- due to the time and computational resoruce infeasibility of running the full evaluation
-evaluateFinalReport :: Int -> [Genome Double] -> Genome Double -> Rand PureMT [Int]
-evaluateFinalReport k blackopps whitegenome = do
-    oppsKblack <- randomNopponents k blackopps
-    allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) oppsKblack
-    return $ allresults
-
 
 -- Play a Black genome against 15 randomly selected White opponents
 evaluateNoCoinAgainstMultipleBlack :: [Genome Double] -> Genome Double -> Rand PureMT Int
@@ -222,37 +172,14 @@ evaluateToTupleCoEv player1 blackgenomes whitegenomes = do
         map ((,) w) [evalscore]
 
 
--- Unpacking a tuple within a monad to a monadic tuple   
-toMonadTuple :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
-toMonadTuple [] = return $ []
-toMonadTuple ((a,b):xs) = do
-   y <- b
-   z <- toMonadTuple xs
-   --return $ foldr (:) [(a,y+2)] z
-   return $ (a,y):z
-
-test = do
-    -- evalRand returns value ONLY
-    -- runRand return value AND generator in a tuple (v,g)
-    g <- newPureMT 
-    let p = evalRand (randomGenomes 10 1 (0.1::Double) (1.0::Double) ) g
-    -- crossover function test
-    let z = evalRand (uniformCrossover 0.75 (head p,[4,5,6])) g
-    -- mutations test
-    let k = evalRand (mutation 0.75 [1,2,3,4]) g
-    -- do batch crossovers test
-    let y = evalRand (doCrossovers p (uniformCrossover 0.75)) g
-    -- selection
-    let samplePopFitnessTuples = zip p [0,4,3,7,8,9,1,5,6,3]
-    let sel = evalRand (selectionTournament samplePopFitnessTuples 2) g
-    print "Population"
-    print p
-    print "Population,Fitness tuples"
-    -- mapM for neat and tidy printing one by one
-    mapM_ print samplePopFitnessTuples
-    --print y
-    print "Tournament selection"
-    mapM_ print sel
+-- Evaluation function for the final results, comparing two populations.
+-- Evolved White players are evaluated against a randomly chosen subset k of deterministically evolved Black players
+-- due to the time and computational resoruce infeasibility of running the full evaluation
+evaluateFinalReport :: Int -> [Genome Double] -> Genome Double -> Rand PureMT [Int]
+evaluateFinalReport k blackopps whitegenome = do
+    oppsKblack <- randomNopponents k blackopps
+    allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) oppsKblack
+    return $ allresults
 
 -- ******************************************************
 -- ************* EVOLUTIONARY WRAPPERS ******************

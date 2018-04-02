@@ -2,19 +2,18 @@ module Utils where
 
 import Data.List (intersperse, concat, foldl', sortBy, foldl1', genericLength, zip5, zip6)
 import Data.Maybe (fromMaybe, fromJust, isJust, isNothing)
+import Data.Function (on)
 import qualified Data.Vector as V
 import Control.Monad
 
 import Data.Vector.Unboxed (create, freeze)
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.Map.Strict as M
--- import qualified Data.Vector.Unboxed.Mutable as MUV
-import System.Random
 
+import System.Random
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
 import Control.Applicative
-import Data.Function (on)
 
 -- for date time generation
 import Data.Time.Clock
@@ -46,8 +45,6 @@ data GameState = GameState VectorBoard Player
 -- ** EVOLUTIONARY DATA TYPES **
 
 type Genome a = [a]
-
--- type FitnessFun a = Genome a -> Int
 
 type SelectionFun a = [(Genome a, Double)] -> Rand PureMT [Genome a]
 
@@ -235,6 +232,21 @@ getEvolutionaryStats _mean _sdvar _minmax =
         commaSeparated (x,y,z,u,s) = 
             show x ++ "," ++ show y ++ "," ++ show z ++ "," ++ show u ++ "," ++ show s
     in unlines $ map commaSeparated $ zip5 genNumber _mean sd smallest largest
+
+
+-- **********************************************************************
+-- ********************** MONADIC ***************************************
+-- **********************************************************************
+
+-- Unpacking a tuple within a monad to a monadic tuple   
+toMonadTuple :: [(Genome Double, Rand PureMT Int)] -> Rand PureMT [(Genome Double, Int)]
+toMonadTuple [] = return $ []
+toMonadTuple ((a,b):xs) = do
+   y <- b
+   z <- toMonadTuple xs
+   -- alternatively
+   -- return $ foldr (:) [(a,y+2)] z
+   return $ (a,y):z
 
 -- ********************************
 -- *** RANDOM GENOME GENERATION ***
