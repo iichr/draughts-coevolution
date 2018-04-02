@@ -160,7 +160,7 @@ evaluate gen1 gen2 = do
 -- gen1 the maximiser (Black),
 -- gen2 the minimiser (White)
 evaluateNoCoin :: Genome Double -> Genome Double -> Rand PureMT Int
-evaluateNoCoin gen1 gen2 = playnonIO' 150 gen1 gen2 maximiser minimiser gs
+evaluateNoCoin gen1 gen2 = playnonIO' 140 gen1 gen2 maximiser minimiser gs
         where
             maximiser = maxplayer 1
             minimiser = minplayer 1
@@ -174,6 +174,16 @@ evaluateNoCoinAgainstMultiple blackopps whitegen = do
     allresults <- mapM (\blackop -> evaluateNoCoin blackop whitegen) opps20randomBlack
     -- filter just white wins as whitegen is White
     return $ length $ filter (==(-1)) allresults
+
+
+-- Evaluation function for the final results, comparing two populations.
+-- Evolved White players are evaluated against a randomly chosen subset k of deterministically evolved Black players
+-- due to the time and computational resoruce infeasibility of running the full evaluation
+evaluateFinalReport :: Int -> [Genome Double] -> Genome Double -> Rand PureMT [Int]
+evaluateFinalReport k blackopps whitegenome = do
+    oppsKblack <- randomNopponents k blackopps
+    allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) oppsKblack
+    return $ allresults
 
 
 -- Play a Black genome against 15 randomly selected White opponents
