@@ -35,10 +35,10 @@ stopCondition :: Int -> Int -> Bool
 stopCondition depth limit = depth == limit
 
 
--- *********************************************
--- ******* ALPHA BETA DEPTH LIMITED SEARCH *****
--- ! ***********  WITH RANDOMNESS   ************
--- *********************************************
+-- ****************************************************************************
+-- ************** ALPHA BETA DEPTH LIMITED SEARCH *****************************
+-- ! ***********  WITH RANDOMNESS (OPTIONALLY PROVIDED)  **********************
+-- ****************************************************************************
 
 minValue' :: (Fractional a, Ord a) => a -> a -> Int -> Int -> GameState -> Genome Double -> (Genome Double -> GameState -> a) -> a
 minValue' alpha beta depth limit state genome evaluator =
@@ -172,25 +172,3 @@ alphabetadepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) 
                                 where
                                     newVal = max val (minValue alpha beta (depth+1) s)
 
-
-minimaxdepthlim :: Int -> Genome Double -> (Genome Double -> GameState -> Double) -> GameState -> GameState
-minimaxdepthlim limit genome evaluator gs@(GameState (VectorBoard b) player1) = 
-    argMax succs (minValue 0)
-    where
-        succs  = getSuccessiveStates gs
-        
-        minValue depth state
-            | endOfGame = evaluator genome state
-            | stopCondition depth limit = evaluator genome state
-            | otherwise =
-                minimum [ maxValue (1+depth) s | s <- getSuccessiveStates state ]
-                where
-                    endOfGame = isJust (whoWon state)
-
-        maxValue depth state
-            | endOfGame = evaluator genome state
-            | stopCondition depth limit = evaluator genome state
-            | otherwise = 
-                maximum [ minValue (1+depth) s | s <- getSuccessiveStates state ]
-                where
-                    endOfGame = isJust (whoWon state)
