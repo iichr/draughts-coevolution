@@ -299,3 +299,13 @@ writePopulationToFile :: String -> [Genome Double] -> IO()
 writePopulationToFile file population = do
     writeFile file (show population)
     print $ "Population written to file: " ++ file 
+
+-- Export a random sample of size lambda to a file specified given a file containing a population
+-- with size greater or equal to lambda
+-- Used when desirable to compare against the same random sample size
+exportRandomPopulationSample :: Int -> String -> String -> PureMT -> IO()
+exportRandomPopulationSample lambda fileImport fileExport gen = do
+    populationWhole <- getApopulationFromFile fileImport
+    let populationRandomSample = evalRand(randomNopponents lambda populationWhole) gen
+    writePopulationToFile fileExport populationRandomSample
+    print $ "Random sample of size " ++ show lambda ++ " has been written to: " ++ fileExport 
