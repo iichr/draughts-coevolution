@@ -22,8 +22,8 @@ finalEval gen whitepop blackpop = eval gen whitepop blackpop
         eval :: PureMT -> [Genome Double] -> [Genome Double] -> [(Int, Int)]
         eval gen whitepop blackpop = do 
             w <- whitepop
-            -- evaluate against 2000 randomly chosen opponents from the best
-            let evalscore = evalRand (evaluateFinalReport 2000 blackpop w) gen
+            -- evaluate against opponents(Black)
+            let evalscore = evalRand (evaluateFinalReport blackpop w) gen
             let wins = length $ filter (==(-1)) evalscore
             let draws = length $ filter (==(0)) evalscore
             return (wins,draws)
@@ -39,9 +39,16 @@ main = do
     -- * FINAL EVALUATION
     -- ***************************
 
-    -- get the best populations from their respective files, deterministic always Black
+    -- * TO BE DONE ONCE INITIALLY, COMMENT OUT OTHERWISE
+    -- * Extract 2000 random individuals from the deterministically evolved population
+    -- * so that we can onbjectively compare the influence of randomness against the same
+    -- * individuals every time.
+    -- * Random sample necessary due to the time and computational resoruce infeasibility of running the full evaluation
+    -- exportRandomPopulationSample 2000 "deterministic15against400gen.txt" "2000randomlychosendeterministic.txt" g 
+
+    -- Get the best populations from their respective files, deterministic always Black
     whiterandomPop <- getApopulationFromFile "bestrandom02.txt"
-    blackdeterministicPop <- getApopulationFromFile "deterministic15against400gen.txt"
+    blackdeterministicPop <- getApopulationFromFile "2000randomlychosendeterministic.txt"
 
     let tupleEvaluatedZipped = finalEval g whiterandomPop blackdeterministicPop
     print tupleEvaluatedZipped

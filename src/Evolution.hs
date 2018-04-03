@@ -173,12 +173,10 @@ evaluateToTupleCoEv player1 blackgenomes whitegenomes = do
 
 
 -- Evaluation function for the final results, comparing two populations.
--- Evolved White players are evaluated against a randomly chosen subset k of deterministically evolved Black players
--- due to the time and computational resoruce infeasibility of running the full evaluation
-evaluateFinalReport :: Int -> [Genome Double] -> Genome Double -> Rand PureMT [Int]
-evaluateFinalReport k blackopps whitegenome = do
-    oppsKblack <- randomNopponents k blackopps
-    allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) oppsKblack
+-- Evolved White players are evaluated against a population of deterministically evolved Black players
+evaluateFinalReport :: [Genome Double] -> Genome Double -> Rand PureMT [Int]
+evaluateFinalReport blackopps whitegenome = do
+    allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) blackopps
     return $ allresults
 
 -- ******************************************************
