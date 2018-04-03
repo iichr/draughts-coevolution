@@ -44,3 +44,10 @@ spec = do
         it "should return a comma separated list line by line, each list with 4 components" $ do
             let string = getEvolutionaryStats [0.1, 0.24, 0.213983] [(0.23,0.64),(2.342,29.45),(23.52,90.42113)] [(0,8),(1,14),(3,12)]
             string `shouldBe` "1,0.1,0.23,0,8\n2,0.24,2.342,1,14\n3,0.213983,23.52,3,12\n"
+    describe "getApopulationFromFile" $ do
+        it "should parse a population from a file and return it as a list of genomes of the correct length" $ do
+            let popSize = 4500
+            testpop <- getApopulationFromFile "bestrandom07.txt"
+            length testpop `shouldBe` popSize
+            testpop05 <- getApopulationFromFile "bestrandom05.txt"
+            length testpop05 `shouldBe` popSize
