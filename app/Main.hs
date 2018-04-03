@@ -35,6 +35,12 @@ main = do
     -- The output is written immediately (never stored in the buffer)
     hSetBuffering stdout NoBuffering
 
+    startDateTimeStamp <- ("Began at: " ++) <$> getDateTime
+    print startDateTimeStamp
+    
+    let randomPopulationFile = "bestrandom05.txt"
+    print $ "Testing deterministic against " ++ randomPopulationFile
+    
     -- ***************************
     -- * FINAL EVALUATION
     -- ***************************
@@ -47,7 +53,7 @@ main = do
     -- exportRandomPopulationSample 2000 "deterministic15against400gen.txt" "2000randomlychosendeterministic.txt" g 
 
     -- Get the best populations from their respective files, deterministic always Black
-    whiterandomPop <- getApopulationFromFile "bestrandom02.txt"
+    whiterandomPop <- getApopulationFromFile randomPopulationFile
     blackdeterministicPop <- getApopulationFromFile "2000randomlychosendeterministic.txt"
 
     let tupleEvaluatedZipped = finalEval g whiterandomPop blackdeterministicPop
@@ -56,7 +62,6 @@ main = do
     -- Sum up the number of wins and the number of draws and print the result 
     let res = (foldl' (+) 0 $ fst $ tupleEvaluated, foldl' (+) 0 $ snd $ tupleEvaluated)
     print res
-    -- FINAL EVALUATION END
 
     -- ***************************
     -- *** MAIN COEVOLUTION ******
