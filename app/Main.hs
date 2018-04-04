@@ -38,7 +38,7 @@ main = do
     startDateTimeStamp <- ("Began at: " ++) <$> getDateTime
     print startDateTimeStamp
 
-    let randomPopulationFile = "bestrandom07.txt"
+    let randomPopulationFile = "bestrandom05.txt"
     print $ "Testing deterministic against " ++ randomPopulationFile
     
     -- ***************************
