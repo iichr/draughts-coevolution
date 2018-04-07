@@ -11,7 +11,6 @@ import Utils
 import DraughtsBoard
 import GamePlay
 import MoveSelectTree
-import MoveSelectMechanical
 import Evolution
 
 -- * Final evaluation of two populations

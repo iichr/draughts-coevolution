@@ -100,8 +100,9 @@ instance Show GameState where
         show board ++ show player
 
 
-
--- ** BOARD FUNCTIONS **
+-- *****************************
+-- ***** BOARD FUNCTIONS *******
+-- *****************************
 
 -- convert a position in a 2D array in the row, column format to a 1D index; zero-indexed
 convertPos2Index :: Position -> Int
@@ -192,7 +193,11 @@ smallestElem xs = foldl1' min xs
 largestElem :: (Integral a) => [a] -> a 
 largestElem xs = foldl1' max xs
 
--- ** STATISTICS (CALL THESE) WRAPPERS
+
+-- **********************************************************************
+-- ************************** STATISTICS ********************************
+-- ******* USE THESE METHODS FOR STATISTICS GATHERING AND DISPLAY *******
+-- **********************************************************************
 
 -- Mean fitness of each generation
 mean :: [[(Genome Double, Int)]] -> [Double]
@@ -244,8 +249,6 @@ toMonadTuple [] = return $ []
 toMonadTuple ((a,b):xs) = do
    y <- b
    z <- toMonadTuple xs
-   -- alternatively
-   -- return $ foldr (:) [(a,y+2)] z
    return $ (a,y):z
 
 -- ********************************
@@ -274,9 +277,9 @@ randomNopponents n population = do
 -- ************** IO **************
 -- ********************************
 
+-- Evaluation and printing all in one
 evalprint :: Show a => Rand PureMT [a] -> PureMT -> IO ()
 evalprint list gen = mapM_ print (evalRand list gen)
-
 
 getDateTime :: IO String
 getDateTime = do
@@ -289,12 +292,14 @@ getDateTime = do
 getFileName :: (IO String, IO String)
 getFileName = ((++"COEA.csv") <$> (getDateTime) , (++"COEAStats.csv") <$> (getDateTime))
 
+-- Read a population from a specified file and parse it as a list of genomes
 getApopulationFromFile :: String -> IO [Genome Double]
 getApopulationFromFile file = do
     contents <- readFile file
     let pop = (read contents)::[Genome Double]
     return pop
 
+-- Write a population to a specified file
 writePopulationToFile :: String -> [Genome Double] -> IO()
 writePopulationToFile file population = do
     writeFile file (show population)
