@@ -31,9 +31,9 @@ minplayer :: Int -> Genome Double -> GameState -> Rand PureMT GameState
 minplayer plyLimit genome gs = alphabetadepthlimneg' negInf posInf 0 plyLimit gs genome getSimpleSum
 
 
--- ******************************************
--- * OTHER PLAYERS *****
--- ******************************************
+-- *************************************************
+-- * OTHER PLAYERS, IO BASED AND DETERMINISTIC *****
+-- *************************************************
 
 maxplayerIO :: Int -> Genome Double -> GameState -> IO GameState
 maxplayerIO plyLimit genome gs = return $ alphabetadepthlim plyLimit genome getSimpleSum gs
@@ -43,52 +43,12 @@ maxplayerNonRand plyLimit genome gs = alphabetadepthlim plyLimit genome getSimpl
 
 
 -- ********************************
--- ***** BOARD SUM FUNCTIONS ******
+-- ***** BOARD SUM ****************
 -- ********************************
 
--- * WITH DIFFERENT WEIGHTS
 -- The sum of the board, i.e. for all squares the value of the piece times the corresponding weight of its position
 -- from the weights vector; a positive result: Player White has an advantage, Black does not, 
 -- and vice versa for a negative result
-getSum :: Genome Double -> GameState -> Double
-getSum genome gs = (foldr (+) 0.0 $ getVectortoSum gs genome)
-                  + 1.3 * (fromIntegral jumpscount) + 0.7 * (fromIntegral simplemovescount)
---                   + (foldr (+) 0.0 $ getVectortoSumCentrePriority gs genome)
-
-        where 
-            jumpscount = length $ getJumps gs
-            simplemovescount = length $ getSimpleMoves gs
-            
-            
-            getVectortoSum :: GameState -> Genome Double -> [Double]
-            getVectortoSum gs@(GameState (VectorBoard b) _) genome = do
-                row <- [0,1,2,5,6,7]
-                col <- [0,1,6,7]
-                let pos = (row, col)
-                let square = getSquare (VectorBoard b) pos
-                let i = convertPos2Index pos
-                --let weightsvector = makeWeightinit
-                let weight = genome !! i
-                let w = (pieceVal square) * 1.9 * weight
-                return w
-
-            -- rows 3 to 4 incl
-            -- cols 2 to 5 incl
-            getVectortoSumCentrePriority :: GameState -> Genome Double -> [Double]
-            getVectortoSumCentrePriority gs@(GameState (VectorBoard b) _) genome = do
-                row <- [3..4]
-                col <- [2..5]
-                let pos = (row, col)
-                let square = getSquare (VectorBoard b) pos
-                let i = convertPos2Index pos
-                --let weightsvector = makeWeightinit
-                let weight = genome !! i
-                let w = (pieceVal square) * 3 * weight
-                return w
-
-
--- * JUST THE SUM OF THE BOARD
-
 getSimpleSum :: Genome Double -> GameState -> Double
 getSimpleSum genome gs= foldl' (+) 0.0 $ getVectortoSum gs genome
          where    
@@ -116,7 +76,6 @@ getSimpleSum genome gs= foldl' (+) 0.0 $ getVectortoSum gs genome
 coin :: RandomGen g => Rand g Int
 coin = getRandomR (0,1)  
 
--- DETERMINISTIC
 -- Get the outcome of playing a game for up to 150 moves given two genomes: 
 -- gen1 the maximiser (Black),
 -- gen2 the minimiser (White)
@@ -179,17 +138,55 @@ evaluateFinalReport blackopps whitegenome = do
     allresults <- mapM(\blackop -> evaluateNoCoin blackop whitegenome) blackopps
     return $ allresults
 
+
 -- ******************************************************
--- ************* EVOLUTIONARY WRAPPERS ******************
+-- ************* EVOLUTIONARY OPERATORS *****************
 -- ******************************************************
 
 -- Modify value with probability p. Unaltered is hence 1-p
 withProbability p funmodify x = do
-  t <- getRandomR (0.0, 1.0)
-  if t < p
-    then funmodify x
-    else return x
+    t <- getRandomR (0.0, 1.0)
+    if t < p
+      then funmodify x
+      else return x
 
+-- *****************
+-- * CROSSOVER
+-- *****************
+uniformCrossover :: Double -> Crossover Double
+uniformCrossover p (g1,g2) = do
+    (h1, h2) <- unzip `liftM` mapM swap (zip g1 g2)
+    return (h1,h2)
+    where
+        swap = withProbability p (\(a,b) -> return (b,a))
+
+
+doCrossovers :: [Genome Double] -> Crossover Double -> Rand PureMT [Genome Double]
+doCrossovers [] _ = return []
+-- return nothing if only a single genome
+doCrossovers [_] _ = return []
+doCrossovers (g1:g2:gs) crossoverFun = do
+    (g1new, g2new) <- crossoverFun (g1, g2)
+    gsnew <- doCrossovers gs crossoverFun
+    return $ g1new:g2new:gsnew
+
+-- *****************
+-- * MUTATION
+-- *****************
+mutation :: Double -> Mutation Double
+mutation p genome = do
+    t <- getRandomR (0.0, 1.0)
+    if t < p
+        then do
+            nrElems <- getRandomR (0, length genome -1)
+            k <- getRandomR(-1.0, 0.0)
+            return ((take nrElems genome) ++ k:(drop (nrElems+1) genome))
+        else
+            return genome
+
+-- *****************
+-- * SELECTION
+-- *****************
 -- Tournament selection
 -- pick two individuals uniformly at random
 -- choose the one with highest fitness
@@ -216,43 +213,6 @@ selectionTournament pop k = selectionLoop pop ([],0) k
             | otherwise = return $ fst chosen
 
 
--- ******************************************************
--- ************* EVOLUTIONARY OPERATORS *****************
--- ******************************************************
-
--- * CROSSOVER
-uniformCrossover :: Double -> Crossover Double
-uniformCrossover p (g1,g2) = do
-    (h1, h2) <- unzip `liftM` mapM swap (zip g1 g2)
-    return (h1,h2)
-    where
-        swap = withProbability p (\(a,b) -> return (b,a))
-
-
-doCrossovers :: [Genome Double] -> Crossover Double -> Rand PureMT [Genome Double]
-doCrossovers [] _ = return []
--- return nothing if only a single genome
-doCrossovers [_] _ = return []
-doCrossovers (g1:g2:gs) crossoverFun = do
-    (g1new, g2new) <- crossoverFun (g1, g2)
-    gsnew <- doCrossovers gs crossoverFun
-    return $ g1new:g2new:gsnew
-
-
--- * MUTATION
-mutation :: Double -> Mutation Double
-mutation p genome = do
-    t <- getRandomR (0.0, 1.0)
-    if t < p
-        then do
-            nrElems <- getRandomR (0, length genome -1)
-            k <- getRandomR(-1.0, 0.0)
-            return ((take nrElems genome) ++ k:(drop (nrElems+1) genome))
-        else
-            return genome
-
-
--- * SELECTION
 -- Given a genome,fitness tuple and number of times to compete in the tournament
 -- specify generational replacement:
 -- if called with (take n $ elitism pop) we will preserve the top n from the population
@@ -271,10 +231,14 @@ selection pop k = select' []
                 select' newPop
 
 
+-- ************************************************************
+-- *** EVALUATION FUNCTIONS FOR EVOLUTION AND CO-EVOLUTION ****
+-- *** TO BE CALLED WITH THEIR RESPECTIVE ALGORITHMS **********
+-- ************************************************************
+
 -- * EVALUATION function combining evaluateToTuple and toMonadTuple
 myEval :: [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
 myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
-
 
 -- * EVALUATION function for CO-EVOLUTION combining evaluateToTuple and toMonadTuple
 -- If player1 == Black: evaluate each black against all white using evaluateNoCoinAgainstMultipleBlack opps b, 1
@@ -282,62 +246,10 @@ myEval opps gen1s = toMonadTuple $ evaluateToTuple opps gen1s
 myEvalCoEv :: Player -> [Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]
 myEvalCoEv player1 blackgenomes whitegenomes = toMonadTuple $ evaluateToTupleCoEv player1 blackgenomes whitegenomes
 
+
 -- **********************************************
--- **** EVOLUTION GENERATION + EXECUTION ********
+-- ************ Co-Evolution ********************
 -- **********************************************
-
-
--- * Generate infinitely many populations recursively, appending them to the previous ones
--- * using the provided 
--- tournament size for tournament selection,
--- function to evaluate a population (assign it fitness values)
--- selection function (tournament selection currently)
--- crossover function
--- mutation function
--- and a fixed number of opponents to evaluate against to obtain fitness values
-generations :: Int ->
-    [(Genome Double, Int)] -> 
-    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
-    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
-    Crossover Double -> 
-    Mutation Double ->
-    [Genome Double] -> 
-    Rand PureMT [[(Genome Double, Int)]]
-generations tournSize !pop selectionFun evalFun crossoverFun mutationFun opps = do
-    newGen <- selectionFun pop tournSize
-    newGen  <- doCrossovers newGen crossoverFun
-    newGen <- mapM mutationFun newGen
-    zippednewPop <- evalFun opps newGen
-    nextGens <- generations tournSize zippednewPop selectionFun evalFun crossoverFun mutationFun opps
-    return $ pop : nextGens
-
-
--- * Execute an evolutionary algorithm, runs infinitely many times producing a list of populations.
--- * Takes an already evaluated initial population and calculates the fitness
--- * of all its individuals. In addition provide
--- a tournament size for tournament selection,
--- a selection function (tournament selection currently)
--- a function to evaluate a population (assign it fitness values)
--- a crossover function
--- a mutation function
--- a fixed number of opponents to evaluate against to obtain fitness values
--- a PureMT generator for evaluting the final population
-executeEA :: Int ->
-    [Genome Double] ->
-    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
-    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) -> 
-    Crossover Double ->
-    Mutation Double ->
-    [Genome Double] -> 
-    PureMT ->
-    [[(Genome Double, Int)]]
-executeEA tournSize startPop selectionFun evalFun crossoverFun mutationFun opps g =
-    let p = evalRand (evalFun opps startPop) g
-    in evalRand (generations tournSize p selectionFun evalFun crossoverFun mutationFun opps) g
-
--- *****************
--- * Co-Evolution **
--- *****************
 
 -- * pop is White, opps are Black
 -- * Generate infinitely many populations recursively, appending them to the previous ones
@@ -386,3 +298,56 @@ executeCOEA tournSize startPop selectionFun evalFunCOEA crossoverFun mutationFun
     let pop = evalRand (evalFunCOEA White startOpps startPop) g
         opps = evalRand (evalFunCOEA Black startOpps startPop) g
     in evalRand (generationsCOEA tournSize pop selectionFun evalFunCOEA crossoverFun mutationFun opps) g
+
+
+-- **********************************************
+-- *********** Evolution ************************
+-- **********************************************
+
+-- * Generate infinitely many populations recursively, appending them to the previous ones
+-- * using the provided 
+-- tournament size for tournament selection,
+-- function to evaluate a population (assign it fitness values)
+-- selection function (tournament selection currently)
+-- crossover function
+-- mutation function
+-- and a fixed number of opponents to evaluate against to obtain fitness values
+generations :: Int ->
+    [(Genome Double, Int)] -> 
+    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) ->
+    Crossover Double -> 
+    Mutation Double ->
+    [Genome Double] -> 
+    Rand PureMT [[(Genome Double, Int)]]
+generations tournSize !pop selectionFun evalFun crossoverFun mutationFun opps = do
+    newGen <- selectionFun pop tournSize
+    newGen  <- doCrossovers newGen crossoverFun
+    newGen <- mapM mutationFun newGen
+    zippednewPop <- evalFun opps newGen
+    nextGens <- generations tournSize zippednewPop selectionFun evalFun crossoverFun mutationFun opps
+    return $ pop : nextGens
+
+
+-- * Execute an evolutionary algorithm, runs infinitely many times producing a list of populations.
+-- * Takes an already evaluated initial population and calculates the fitness
+-- * of all its individuals. In addition provide
+-- a tournament size for tournament selection,
+-- a selection function (tournament selection currently)
+-- a function to evaluate a population (assign it fitness values)
+-- a crossover function
+-- a mutation function
+-- a fixed number of opponents to evaluate against to obtain fitness values
+-- a PureMT generator for evaluting the final population
+executeEA :: Int ->
+    [Genome Double] ->
+    ([(Genome Double, Int)] -> Int -> Rand PureMT [Genome Double]) ->
+    ([Genome Double] -> [Genome Double] -> Rand PureMT [(Genome Double, Int)]) -> 
+    Crossover Double ->
+    Mutation Double ->
+    [Genome Double] -> 
+    PureMT ->
+    [[(Genome Double, Int)]]
+executeEA tournSize startPop selectionFun evalFun crossoverFun mutationFun opps g =
+    let p = evalRand (evalFun opps startPop) g
+    in evalRand (generations tournSize p selectionFun evalFun crossoverFun mutationFun opps) g
