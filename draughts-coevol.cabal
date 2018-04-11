@@ -1,13 +1,13 @@
 name:                draughts-coevol
-version:             0.1.2.0
-synopsis:            Short description of your package
+version:             1.0.0.0
+synopsis:            Implementation of Draughts in a co-evolutionary framework to test related research hypotheses. 
 homepage:            https://github.com/iichr/draughts-coevolution#readme
-license:             BSD3
-license-file:        LICENSE
+license:             EUPL v1.2
+license-file:        LICENCE
 author:              Chris Iliev
 maintainer:          cii549@cs.bham.ac.uk
 copyright:           2018 Chris Iliev
-category:            Game
+category:            Game/Research Experiment
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
